@@ -1,37 +1,36 @@
 package test;
 
-import java.util.ArrayList;
-import java.util.List;
+import java.util.concurrent.CopyOnWriteArrayList;
 
 class Topic {
     public final String name;
-    public List<Agent> subs;
-    public List<Agent> pubs;
+
+    // Thread-safe list of agents that subscribe to this topic
+    public CopyOnWriteArrayList<Agent> subs;
+
+    // Thread-safe list of agents that publish to this topic
+    public CopyOnWriteArrayList<Agent> pubs;
 
     Topic(String name) {
         this.name = name;
-        this.subs = new ArrayList<>();
-        this.pubs = new ArrayList<>();
+        this.subs = new CopyOnWriteArrayList<>();
+        this.pubs = new CopyOnWriteArrayList<>();
     }
 
     public void subscribe(Agent agent) {
-        if (!subs.contains(agent)) {
-            subs.add(agent);
-        }
+        subs.addIfAbsent(agent);
     }
 
     public void unsubscribe(Agent agent) {
         subs.remove(agent);
     }
 
-    public void publish(Message message) {
-        pubs.forEach(publisher -> publisher.callback(this.name, message));
+    public void publish(Message msg) {
+        subs.forEach(publisher -> publisher.callback(this.name, msg));
     }
 
     public void addPublisher(Agent agent) {
-        if (!pubs.contains(agent)) {
-            pubs.add(agent);
-        }
+        pubs.addIfAbsent(agent);
     }
 
     public void removePublisher(Agent agent) {

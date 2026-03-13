@@ -9,10 +9,9 @@ public class TopicManagerSingleton {
 
         private static final TopicManager instance = new TopicManager();
 
-        private final ConcurrentHashMap<String, Topic> topics;
+        private final ConcurrentHashMap<String, Topic> topics = new ConcurrentHashMap<>();
 
         private TopicManager() {
-            topics = new ConcurrentHashMap<>();
         }
 
         public Topic getTopic(String topicName) {
@@ -27,6 +26,8 @@ public class TopicManagerSingleton {
             topics.clear();
         }
     }
+
+    private TopicManagerSingleton() {}
 
     public static TopicManager get() {
         return TopicManager.instance;
