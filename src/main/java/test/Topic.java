@@ -1,5 +1,6 @@
 package test;
 
+import java.util.List;
 import java.util.concurrent.CopyOnWriteArrayList;
 
 class Topic {
@@ -35,5 +36,13 @@ class Topic {
 
     public void removePublisher(Agent agent) {
         pubs.remove(agent);
+    }
+
+    public List<Agent> getSubscribers() {
+        return subs;
+    }
+
+    public List<Agent> getPublishers() {
+        return pubs;
     }
 }
