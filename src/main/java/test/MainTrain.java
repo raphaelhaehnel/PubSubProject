@@ -8,7 +8,7 @@ public class MainTrain {
     public static void main(String[] args) {
         int c=Thread.activeCount();
         GenericConfig gc=new GenericConfig();
-        gc.setConfFile("simple.conf"); // change to the exact loaction where you put the file.
+        gc.setConfFile("src/main/java/test/simple.conf"); // change to the exact loaction where you put the file.
         gc.create();
 
         if(Thread.activeCount()!=c+2){
