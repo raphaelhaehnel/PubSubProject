@@ -4,24 +4,15 @@ import java.io.BufferedReader;
 import java.io.FileReader;
 import java.io.IOException;
 import java.lang.reflect.Constructor;
-import java.lang.reflect.InvocationTargetException;
 import java.util.ArrayList;
 import java.util.List;
-import java.util.Set;
 import java.util.regex.Pattern;
 
 public class GenericConfig implements Config {
 
     private String configPath;
 
-    private final List<String> agentTypes = new ArrayList<>();
-    private final List<String> subsLines = new ArrayList<>();
-    private final List<String> pubsLines = new ArrayList<>();
-
     private static final Pattern TOPIC_PATTERN = Pattern.compile("^[A-Z]$");
-
-    private static final Set<String> SINGLE_INPUT_AGENTS = Set.of("IncAgent");
-    private static final Set<String> DOUBLE_INPUT_AGENTS = Set.of("PlusAgent");
 
     private final List<Agent> instantiatedAgents = new ArrayList<>();
 
@@ -30,61 +21,25 @@ public class GenericConfig implements Config {
     }
 
     public void create() {
-        if (configPath == null) {
-            return;
-        }
+        if (configPath == null) return;
         List<String> lines = getText();
 
-        if (lines.size() % 3 != 0) {
-            throw new RuntimeException("Config file format error: total lines is not a multiple of 3");
-        }
-
         for (int i = 0; i < lines.size(); i += 3) {
-            agentTypes.add(lines.get(i));
-            subsLines.add(lines.get(i + 1));
-            pubsLines.add(lines.get(i + 2));
-        }
+            String agentType = lines.get(i);
+            String[] subs = parseTopics(lines.get(i + 1));
+            String[] pubs = parseTopics(lines.get(i + 2));
 
-        for (int i = 0; i < agentTypes.size(); i++) {
-            String agentType = agentTypes.get(i);
-            String subsLine = subsLines.get(i);
-            String pubsLine = pubsLines.get(i);
-
-            int agentLineNum = i * 3 + 1;
-            int subsLineNum = i * 3 + 2;
-            int pubsLineNum = i * 3 + 3;
-
-            validateAgentType(agentType, agentLineNum);
-            validateTopicLine(subsLine, "Subscription", subsLineNum);
-            validateTopicLine(pubsLine, "Publication", pubsLineNum);
-
-            if (SINGLE_INPUT_AGENTS.contains(agentType)) {
-                validateTopicCount(subsLine, 1, subsLineNum, agentType, "listen");
-                validateTopicCount(pubsLine, 1, pubsLineNum, agentType, "publish");
-            } else if (DOUBLE_INPUT_AGENTS.contains(agentType)) {
-                validateTopicCount(subsLine, 2, subsLineNum, agentType, "listen");
-                validateTopicCount(pubsLine, 1, pubsLineNum, agentType, "publish");
-            }
-        }
-
-        Agent agent;
-        for (int i = 0; i < agentTypes.size(); i++) {
-            String agentType = agentTypes.get(i);
-            String subsLine = subsLines.get(i);
-            String pubsLine = pubsLines.get(i);
-            String[] subs = parseTopics(subsLine);
-            String[] pubs = parseTopics(pubsLine);
             try {
                 Class<?> agentClass = Class.forName(agentType);
                 Constructor<?> constructor = agentClass.getConstructor(String[].class, String[].class);
+                Agent agent = (Agent) constructor.newInstance((Object)subs, (Object)pubs);
+                ParallelAgent parallelAgent = new ParallelAgent(agent, 10);
+                instantiatedAgents.add(parallelAgent);
 
-                agent = (Agent) constructor.newInstance(subs, pubs);
-            } catch (ClassNotFoundException | NoSuchMethodException | InstantiationException | IllegalAccessException |
-                     InvocationTargetException e) {
-                throw new RuntimeException("Failed to instantiate agent: " + agentType, e);
+            } catch (Exception e) {
+                System.err.println("Could not load agent: " + agentType);
+                e.printStackTrace();
             }
-            ParallelAgent parallelAgent = new ParallelAgent(agent, 10);
-            instantiatedAgents.add(parallelAgent);
         }
     }
 
