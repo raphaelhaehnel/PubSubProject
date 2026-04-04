@@ -1,4 +1,4 @@
-package test;
+package graph;
 
 import java.util.concurrent.ArrayBlockingQueue;
 import java.util.concurrent.BlockingQueue;

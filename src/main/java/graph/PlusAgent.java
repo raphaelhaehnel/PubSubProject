@@ -1,6 +1,6 @@
-package test;
+package graph;
 
-import test.TopicManagerSingleton.TopicManager;
+import graph.TopicManagerSingleton.TopicManager;
 
 public class PlusAgent implements Agent {
 
