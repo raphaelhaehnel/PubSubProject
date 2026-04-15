@@ -1,5 +1,7 @@
-package test;
+package server;
 
+
+import servlets.Servlet;
 
 public interface HTTPServer extends Runnable{
     void addServlet(String httpCommand, String uri, Servlet s);

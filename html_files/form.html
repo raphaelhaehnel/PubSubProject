@@ -1,0 +1,21 @@
+<!DOCTYPE html>
+<html>
+<body>
+
+<h3>Upload Config</h3>
+<form action="/upload" method="post" target="centerFrame">
+    <textarea name="config" rows="10" cols="30"></textarea><br>
+    <button type="submit">Deploy</button>
+</form>
+
+<hr>
+
+<h3>Publish Message</h3>
+<form action="/publish" method="get" target="rightFrame">
+    Topic: <input type="text" name="topic"><br>
+    Message: <input type="text" name="message"><br><br>
+    <button type="submit">Send</button>
+</form>
+
+</body>
+</html>

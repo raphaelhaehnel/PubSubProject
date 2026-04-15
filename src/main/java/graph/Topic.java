@@ -3,7 +3,7 @@ package graph;
 import java.util.List;
 import java.util.concurrent.CopyOnWriteArrayList;
 
-class Topic {
+public class Topic {
     public final String name;
 
     // Thread-safe list of agents that subscribe to this topic

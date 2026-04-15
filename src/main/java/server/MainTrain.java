@@ -1,15 +1,13 @@
-package test;
+package server;
 
 import java.io.*;
 import java.net.Socket;
-import java.net.SocketAddress;
-import java.nio.charset.StandardCharsets;
 import java.util.Arrays;
 import java.util.HashMap;
 import java.util.Map;
-import java.util.Random;
 
-import test.RequestParser.RequestInfo;
+import servlets.Servlet;
+import server.RequestParser.RequestInfo;
 
 
 public class MainTrain { // RequestParser
@@ -51,7 +49,7 @@ public class MainTrain { // RequestParser
             // Test parameters
             Map<String, String> expectedParams = new HashMap<>();
             expectedParams.put("id", "123");
-            expectedParams.put("name", "test");
+            expectedParams.put("name", "server");
             expectedParams.put("filename","\"hello_world.txt\"");
             if (!requestInfo.getParameters().equals(expectedParams)) {
                 System.out.println("Parameters test failed (-5)");
