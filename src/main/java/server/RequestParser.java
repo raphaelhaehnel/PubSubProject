@@ -20,9 +20,10 @@ public class RequestParser {
         Map<String, String> headers = readHeaders(reader);
         Map<String, String> parameters = extractUriParameters(uri);
 
-        readBodyParameters(reader, parameters);
+        int contentLength = parseContentLength(headers);
+        byte[] content = readContent(reader, contentLength);
 
-        byte[] content = readContent(reader);
+        readBodyParameters(content, parameters);
 
         return new RequestInfo(httpCommand, uri, resourceUri, uriSegments, parameters, content);
     }
@@ -89,16 +90,15 @@ public class RequestParser {
         return parameters;
     }
 
-    private static void readBodyParameters(BufferedReader reader, Map<String, String> parameters) throws IOException {
-        String line;
+    private static void readBodyParameters(byte[] content, Map<String, String> parameters) {
+        if (content.length == 0) return;
 
-        if (!reader.ready()) {
-            return;
-        }
+        String body = new String(content, java.nio.charset.StandardCharsets.UTF_8);
 
-        // Read until we hit the empty line that separates parameters from the actual content
-        while ((line = reader.readLine()) != null && !line.isEmpty()) {
-            parseParameter(line.trim(), parameters);
+        for (String param : body.split("&")) {
+            if (!param.isEmpty()) {
+                parseParameter(param, parameters);
+            }
         }
     }
 
@@ -128,23 +128,21 @@ public class RequestParser {
         return headers;
     }
 
-    private static byte[] readContent(BufferedReader reader) throws IOException {
-        StringBuilder contentBuilder = new StringBuilder();
-        String line;
-
-        if (!reader.ready()) {
+    private static byte[] readContent(BufferedReader reader, int contentLength) throws IOException {
+        if (contentLength <= 0) {
             return new byte[0];
         }
 
-        while ((line = reader.readLine()) != null && !line.isEmpty()) {
-            contentBuilder.append(line).append("\n");
+        char[] buffer = new char[contentLength];
+        int totalRead = 0;
 
-            if (!reader.ready()) {
-                break;
-            }
+        while (totalRead < contentLength) {
+            int read = reader.read(buffer, totalRead, contentLength - totalRead);
+            if (read == -1) break;
+            totalRead += read;
         }
 
-        return contentBuilder.toString().getBytes(java.nio.charset.StandardCharsets.UTF_8);
+        return new String(buffer, 0, totalRead).getBytes(java.nio.charset.StandardCharsets.UTF_8);
     }
 
     private static int parseContentLength(Map<String, String> headers) throws IOException {
