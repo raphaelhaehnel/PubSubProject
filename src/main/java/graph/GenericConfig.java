@@ -24,6 +24,8 @@ public class GenericConfig implements Config {
         if (configPath == null) return;
         List<String> lines = getText();
 
+        if (lines.size() % 3 != 0) return;
+
         for (int i = 0; i < lines.size(); i += 3) {
             String agentType = lines.get(i);
             String[] subs = parseTopics(lines.get(i + 1));

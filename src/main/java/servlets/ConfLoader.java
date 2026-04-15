@@ -67,7 +67,7 @@ public class ConfLoader implements Servlet {
 
         String response =
                 "HTTP/1.1 " + statusCode + " " + statusText + "\r\n" +
-                        "Content-Type: text/html\r\n" +
+                        "Content-Type: text/html; charset=UTF-8\r\n" +
                         "Content-Length: " + bodyBytes.length + "\r\n" +
                         "\r\n";
 

@@ -11,7 +11,6 @@ public class HtmlGraphWriter {
 
     public static String getGraphHTML(Graph graph) {
         try {
-            // Load HTML template
             String html = new String(
                     Files.readAllBytes(Paths.get("html_files/graph.html"))
             );
@@ -20,7 +19,6 @@ public class HtmlGraphWriter {
 
             content.append("<h3>Nodes</h3>");
 
-            // ✅ Display all nodes
             for (Node node : graph) {
                 String typeClass = getNodeTypeClass(node.getName());
 
@@ -29,7 +27,6 @@ public class HtmlGraphWriter {
                 content.append("</div>");
             }
 
-            // ✅ Display edges
             content.append("<h3>Connections</h3>");
 
             for (Node from : graph) {
@@ -42,7 +39,6 @@ public class HtmlGraphWriter {
                 }
             }
 
-            // Replace placeholder
             html = html.replace("<!-- GRAPH_CONTENT -->", content.toString());
 
             return html;
