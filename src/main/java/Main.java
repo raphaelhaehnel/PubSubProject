@@ -1,6 +1,7 @@
 import server.HTTPServer;
 import server.MyHTTPServer;
 import servlets.ConfLoader;
+import servlets.GraphDisplayer;
 import servlets.HtmlLoader;
 import servlets.TopicDisplayer;
 
@@ -12,6 +13,7 @@ public class Main {
 
         server.addServlet("GET", "/publish", new TopicDisplayer());
         server.addServlet("POST", "/upload", new ConfLoader());
+        server.addServlet("GET", "/graph", new GraphDisplayer());
         server.addServlet("GET", "/app", new HtmlLoader("html_files"));
 
         server.start();

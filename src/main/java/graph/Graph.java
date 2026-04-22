@@ -18,7 +18,11 @@ public class Graph extends ArrayList<Node> {
         TopicManagerSingleton.TopicManager topicManager = TopicManagerSingleton.get();
 
         for (Topic topic : topicManager.getTopics()) {
-            Node topicNode = topicNodeMap.computeIfAbsent(topic, t -> createNewNode("T" + t.name));
+            Node topicNode = topicNodeMap.computeIfAbsent(topic, t -> {
+                Node node = createNewNode("T" + t.name);
+                node.setMsg(t.getLastMessage());
+                return node;
+            });
             connectPublishersToTopic(topic, topicNode, agentNodeMap);
             connectSubscribersToTopic(topic, topicNode, agentNodeMap);
         }
@@ -39,7 +43,11 @@ public class Graph extends ArrayList<Node> {
 
     private void connectPublishersToTopic(Topic topic, Node topicNode, Map<Agent, Node> agentNodeMap) {
         for (Agent publisher : topic.getPublishers()) {
-            Node agentNode = agentNodeMap.computeIfAbsent(publisher, a -> createNewNode("A" + a.getName()));
+            Node agentNode = agentNodeMap.computeIfAbsent(publisher, a -> {
+                Node node = createNewNode("A" + a.getName());
+                node.setMsg(topic.getLastMessage());
+                return node;
+            });
             agentNode.addEdge(topicNode);
         }
     }

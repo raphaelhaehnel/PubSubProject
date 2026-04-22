@@ -12,6 +12,8 @@ public class Topic {
     // Thread-safe list of agents that publish to this topic
     public CopyOnWriteArrayList<Agent> pubs;
 
+    private volatile Message lastMessage;
+
     Topic(String name) {
         this.name = name;
         this.subs = new CopyOnWriteArrayList<>();
@@ -27,6 +29,7 @@ public class Topic {
     }
 
     public void publish(Message msg) {
+        lastMessage = msg;
         subs.forEach(publisher -> publisher.callback(this.name, msg));
     }
 
@@ -44,5 +47,9 @@ public class Topic {
 
     public List<Agent> getPublishers() {
         return pubs;
+    }
+
+    public Message getLastMessage() {
+        return lastMessage;
     }
 }

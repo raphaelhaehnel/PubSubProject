@@ -13,9 +13,6 @@ import java.util.concurrent.ConcurrentHashMap;
 
 public class TopicDisplayer implements Servlet {
 
-    // ✅ Store last messages per topic
-    private static final Map<String, Message> lastMessages = new ConcurrentHashMap<>();
-
     @Override
     public void handle(RequestParser.RequestInfo ri, OutputStream toClient) throws IOException {
 
@@ -29,7 +26,6 @@ public class TopicDisplayer implements Servlet {
                 return;
             }
 
-            // ✅ Get TopicManager
             TopicManagerSingleton.TopicManager topicManager = TopicManagerSingleton.get();
 
             Topic topic = topicManager.getTopic(topicName);
@@ -40,20 +36,12 @@ public class TopicDisplayer implements Servlet {
                 return;
             }
 
-            // ✅ Create Message
             Message msg = new Message(messageText);
-
-            // ✅ Publish to system
             topic.publish(msg);
-
-            // ✅ Save last value (VIEW responsibility)
-            lastMessages.put(topicName, msg);
-
-            // ✅ Build full table (ALL topics)
             StringBuilder rows = new StringBuilder();
 
             for (Topic t : topicManager.getTopics()) {
-                Message m = lastMessages.get(t.name);
+                Message m = t.getLastMessage();
 
                 String value;
                 if (m == null) {

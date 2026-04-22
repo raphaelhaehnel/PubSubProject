@@ -1,22 +1,16 @@
 <!DOCTYPE html>
 <html>
 <head>
+    <meta charset="UTF-8">
+
+    <!-- Vis.js CDN -->
+    <script src="https://unpkg.com/vis-network/standalone/umd/vis-network.min.js"></script>
+
     <style>
-        .node {
-            display: inline-block;
-            padding: 10px;
-            margin: 10px;
-            border-radius: 8px;
-            border: 2px solid black;
-            font-weight: bold;
-        }
-
-        .topic {
-            background-color: lightblue;
-        }
-
-        .agent {
-            background-color: lightgreen;
+        #graph {
+            width: 100%;
+            height: 500px;
+            border: 1px solid lightgray;
         }
     </style>
 </head>
@@ -24,9 +18,36 @@
 
 <h2>Graph View</h2>
 
-<div id="graph-container">
-    <!-- GRAPH_CONTENT -->
-</div>
+<div id="graph"></div>
+
+<script>
+    const nodes = new vis.DataSet([
+        <!-- NODES_PLACEHOLDER -->
+    ]);
+
+    const edges = new vis.DataSet([
+        <!-- EDGES_PLACEHOLDER -->
+    ]);
+
+    const container = document.getElementById("graph");
+    const data = { nodes: nodes, edges: edges };
+
+    const options = {
+        nodes: {
+            shape: "dot",
+            size: 16,
+            font: { size: 14 }
+        },
+        edges: {
+            arrows: "to"
+        },
+        physics: {
+            enabled: true
+        }
+    };
+
+    new vis.Network(container, data, options);
+</script>
 
 </body>
 </html>
