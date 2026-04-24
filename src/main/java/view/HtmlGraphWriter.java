@@ -4,75 +4,71 @@ import graph.Graph;
 import graph.Message;
 import graph.Node;
 
-import java.nio.charset.StandardCharsets;
-import java.nio.file.Files;
-import java.nio.file.Paths;
-import java.io.IOException;
 import java.util.HashMap;
 import java.util.Map;
 
 public class HtmlGraphWriter {
 
-    public static String getGraphHTML(Graph graph) {
-        try {
-            System.out.println("Running getGraphHTML");
-            String html = new String(
-                    Files.readAllBytes(Paths.get("html_files/graph.html")),
-                    StandardCharsets.UTF_8
-            );
+    public static String getGraphJSON(Graph graph) {
+        StringBuilder json = new StringBuilder();
 
-            StringBuilder nodesBuilder = new StringBuilder();
-            StringBuilder edgesBuilder = new StringBuilder();
+        json.append("{\"nodes\":[");
 
-            int id = 1;
-            Map<String, Integer> nodeIds = new HashMap<>();
+        Map<String, Integer> nodeIds = new HashMap<>();
+        int id = 1;
+        boolean first = true;
 
-            for (Node node : graph) {
-                if (!nodeIds.containsKey(node.getName())) {
-                    nodeIds.put(node.getName(), id++);
+        for (Node node : graph) {
+            if (!nodeIds.containsKey(node.getName())) {
+                nodeIds.put(node.getName(), id++);
 
-                    String color = node.getName().startsWith("T") ? "lightblue" : "lightgreen";
+                if (!first) json.append(",");
+                first = false;
 
-                    nodesBuilder.append("{ id: ")
-                            .append(nodeIds.get(node.getName()))
-                            .append(", label: '")
-                            .append(escapeJS(node.getName()));
+                String color = node.getName().startsWith("T") ? "lightblue" : "lightgreen";
 
-                    Message message = node.getMsg();
-                    if (message != null && message.asText != null) {
-                        nodesBuilder.append("\\n(")
-                                .append(escapeJS(message.asText))
-                                .append(")");
-                    }
+                json.append("{")
+                        .append("\"id\":").append(nodeIds.get(node.getName())).append(",")
+                        .append("\"label\":\"").append(escapeJson(node.getName()));
 
-                    nodesBuilder.append("'");
-
-
-
-                    nodesBuilder.append(", color: '")
-                            .append(color)
-                            .append("' },\n");
+                Message message = node.getMsg();
+                if (message != null && message.asText != null) {
+                    json.append("\\n(")
+                            .append(escapeJson(message.asText))
+                            .append(")");
                 }
+
+                json.append("\",");
+
+                json.append("\"color\":\"").append(color).append("\"")
+                        .append("}");
             }
-
-            for (Node from : graph) {
-                for (Node to : from.getEdges()) {
-                    edgesBuilder.append("{ from: ")
-                            .append(nodeIds.get(from.getName()))
-                            .append(", to: ")
-                            .append(nodeIds.get(to.getName()))
-                            .append(" },\n");
-                }
-            }
-
-            html = html.replace("<!-- NODES_PLACEHOLDER -->", nodesBuilder.toString());
-            html = html.replace("<!-- EDGES_PLACEHOLDER -->", edgesBuilder.toString());
-
-            return html;
-
-        } catch (IOException e) {
-            return "<html><body>Error loading graph</body></html>";
         }
+
+        json.append("],\"edges\":[");
+
+        first = true;
+
+        for (Node from : graph) {
+            for (Node to : from.getEdges()) {
+                if (!first) json.append(",");
+                first = false;
+
+                json.append("{")
+                        .append("\"from\":").append(nodeIds.get(from.getName())).append(",")
+                        .append("\"to\":").append(nodeIds.get(to.getName()))
+                        .append("}");
+            }
+        }
+
+        json.append("]}");
+
+        return json.toString();
+    }
+
+    private static String escapeJson(String s) {
+        return s.replace("\"", "\\\"")
+                .replace("\n", "\\n");
     }
 
     private static String escapeJS(String s) {

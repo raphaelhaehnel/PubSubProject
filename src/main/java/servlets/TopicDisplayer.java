@@ -38,9 +38,15 @@ public class TopicDisplayer implements Servlet {
 
             Message msg = new Message(messageText);
             topic.publish(msg);
-            StringBuilder rows = new StringBuilder();
+            StringBuilder json = new StringBuilder();
+            json.append("{\"topics\":[");
+
+            boolean first = true;
 
             for (Topic t : topicManager.getTopics()) {
+                if (!first) json.append(",");
+                first = false;
+
                 Message m = t.getLastMessage();
 
                 String value;
@@ -52,28 +58,38 @@ public class TopicDisplayer implements Servlet {
                     value = m.asText;
                 }
 
-                rows.append("<tr>")
-                        .append("<td>").append(t.name).append("</td>")
-                        .append("<td>").append(value).append("</td>")
-                        .append("</tr>");
+                json.append("{")
+                        .append("\"name\":\"").append(escapeJson(t.name)).append("\",")
+                        .append("\"value\":\"").append(escapeJson(value)).append("\"")
+                        .append("}");
             }
 
-            String html =
-                    "<html><body>" +
-                            "<h3>Topics Table</h3>" +
-                            "<table border='1'>" +
-                            "<tr><th>Topic</th><th>Last Value</th></tr>" +
-                            rows +
-                            "</table>" +
-                            "</body></html>";
+            json.append("]}");
 
-            sendResponse(toClient, 200, html);
+            sendJsonResponse(toClient, 200, json.toString());
 
         } catch (Exception e) {
             e.printStackTrace();
             sendResponse(toClient, 500,
                     "<html><body>Server error</body></html>");
         }
+    }
+
+    private String escapeJson(String s) {
+        return s.replace("\"", "\\\"");
+    }
+
+    private void sendJsonResponse(OutputStream out, int statusCode, String body) throws IOException {
+        byte[] bodyBytes = body.getBytes(StandardCharsets.UTF_8);
+
+        String response =
+                "HTTP/1.1 " + statusCode + " OK\r\n" +
+                        "Content-Type: application/json; charset=UTF-8\r\n" +
+                        "Content-Length: " + bodyBytes.length + "\r\n\r\n";
+
+        out.write(response.getBytes(StandardCharsets.UTF_8));
+        out.write(bodyBytes);
+        out.flush();
     }
 
     @Override

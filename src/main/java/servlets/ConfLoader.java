@@ -20,7 +20,6 @@ public class ConfLoader implements Servlet {
     public void handle(RequestParser.RequestInfo ri, OutputStream toClient) throws IOException {
 
         try {
-            // get config content from POST params
             String configText = ri.getParameters().get("config");
 
             if (configText == null || configText.isEmpty()) {
@@ -30,28 +29,35 @@ public class ConfLoader implements Servlet {
 
             String decodedText = URLDecoder.decode(configText, StandardCharsets.UTF_8);
 
-            // save to file
-            Files.write(Paths.get(TEMP_FILE), decodedText.getBytes(StandardCharsets.UTF_8));
+            Files.writeString(Paths.get(TEMP_FILE), decodedText);
 
-            // load config
             GenericConfig config = new GenericConfig();
             config.setConfFile(TEMP_FILE);
             config.create();
 
-            // build graph
             Graph graph = new Graph();
             graph.createFromTopics();
 
-            // generate HTML
-            String html = HtmlGraphWriter.getGraphHTML(graph);
-
-            // send response
-            sendResponse(toClient, 200, html);
+            String json = HtmlGraphWriter.getGraphJSON(graph);
+            sendJsonResponse(toClient, 200, json);
 
         } catch (Exception e) {
             e.printStackTrace();
             sendResponse(toClient, 500, "<html><body>Error processing config</body></html>");
         }
+    }
+
+    private void sendJsonResponse(OutputStream out, int statusCode, String body) throws IOException {
+        byte[] bodyBytes = body.getBytes(StandardCharsets.UTF_8);
+
+        String response =
+                "HTTP/1.1 " + statusCode + " OK\r\n" +
+                        "Content-Type: application/json; charset=UTF-8\r\n" +
+                        "Content-Length: " + bodyBytes.length + "\r\n\r\n";
+
+        out.write(response.getBytes(StandardCharsets.UTF_8));
+        out.write(bodyBytes);
+        out.flush();
     }
 
     @Override

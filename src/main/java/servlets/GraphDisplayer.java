@@ -16,14 +16,26 @@ public class GraphDisplayer implements Servlet {
             Graph graph = new Graph();
             graph.createFromTopics();
 
-            String html = HtmlGraphWriter.getGraphHTML(graph);
-
-            sendResponse(toClient, 200, html);
+            String json = HtmlGraphWriter.getGraphJSON(graph);
+            sendJsonResponse(toClient, 200, json);
 
         } catch (Exception e) {
             e.printStackTrace();
             sendResponse(toClient, 500, "<html><body>Error loading graph</body></html>");
         }
+    }
+
+    private void sendJsonResponse(OutputStream out, int statusCode, String body) throws IOException {
+        byte[] bodyBytes = body.getBytes(StandardCharsets.UTF_8);
+
+        String response =
+                "HTTP/1.1 " + statusCode + " OK\r\n" +
+                        "Content-Type: application/json; charset=UTF-8\r\n" +
+                        "Content-Length: " + bodyBytes.length + "\r\n\r\n";
+
+        out.write(response.getBytes(StandardCharsets.UTF_8));
+        out.write(bodyBytes);
+        out.flush();
     }
 
     private void sendResponse(OutputStream out, int statusCode, String body) throws IOException {
