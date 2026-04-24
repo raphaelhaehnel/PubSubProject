@@ -38,9 +38,11 @@ public class HtmlLoader implements Servlet {
 
             byte[] content = Files.readAllBytes(Paths.get(fullPath));
 
+            String contentType = getContentType(fileName);
+
             String header =
                     "HTTP/1.1 200 OK\r\n" +
-                            "Content-Type: text/html\r\n" +
+                            "Content-Type: " + contentType + "; charset=UTF-8\r\n" +
                             "Content-Length: " + content.length + "\r\n" +
                             "\r\n";
 
@@ -54,6 +56,21 @@ public class HtmlLoader implements Servlet {
             sendResponse(toClient, 500,
                     "<html><body><h3>500 - Server Error</h3></body></html>");
         }
+    }
+
+    private String getContentType(String fileName) {
+        String contentType;
+
+        if (fileName.endsWith(".html")) {
+            contentType = "text/html";
+        } else if (fileName.endsWith(".css")) {
+            contentType = "text/css";
+        } else if (fileName.endsWith(".js")) {
+            contentType = "application/javascript";
+        } else {
+            contentType = "text/plain";
+        }
+        return contentType;
     }
 
     @Override

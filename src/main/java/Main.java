@@ -14,7 +14,7 @@ public class Main {
         server.addServlet("GET", "/publish", new TopicDisplayer());
         server.addServlet("POST", "/upload", new ConfLoader());
         server.addServlet("GET", "/graph", new GraphDisplayer());
-        server.addServlet("GET", "/app", new HtmlLoader("html_files"));
+        server.addServlet("GET", "/app", new HtmlLoader("web"));
 
         server.start();
         System.in.read();

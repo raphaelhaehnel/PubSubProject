@@ -1,0 +1,43 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="UTF-8">
+    <title>Graph App</title>
+    <link rel="stylesheet" href="/app/styles.css">
+    <script src="https://unpkg.com/vis-network/standalone/umd/vis-network.min.js"></script>
+</head>
+<body>
+
+<div id="left">
+    <h3>Upload Config</h3>
+    <textarea id="config"></textarea>
+    <button onclick="upload()">Deploy</button>
+
+    <hr>
+
+    <h3>Publish Message</h3>
+    <input id="topic" placeholder="Topic">
+    <input id="message" placeholder="Message">
+    <button onclick="publish()">Send</button>
+</div>
+
+<div id="center">
+    <div id="graph"></div>
+</div>
+
+<div id="right">
+    <h3>Topics</h3>
+    <div id="table"></div>
+</div>
+
+<script src="/app/api.js"></script>
+<script src="/app/graph.js"></script>
+<script src="/app/topics.js"></script>
+
+<script>
+    initGraph();
+    loadGraph();
+</script>
+
+</body>
+</html>
