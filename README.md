@@ -7,10 +7,13 @@ It implements a full server with a backend implementing a computational graph, a
 
 The backend implements a publisher-subscriber mechanism: publishers can publish messages to specific topics, and subscribers can subscribe to these topics to automatically get new published messages.
 
+## Features
+
 ## Requirements
 
-1) Java 17
-2) Google Chrome
+- Java 17 or higher 
+- Web browser (Chrome recommended)
+- Internet connection (the Vis.js library required internet connection)
 
 ## Usage
 
