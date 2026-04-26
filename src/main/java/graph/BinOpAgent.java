@@ -6,7 +6,6 @@ public class BinOpAgent implements Agent {
 
     private final BinaryOperator<Double> operation;
     private final String agentName;
-    private final TopicManagerSingleton.TopicManager topicManager;
     private final Topic firstTopic;
     private final Topic secondTopic;
     private final Topic outputTopic;
@@ -16,7 +15,7 @@ public class BinOpAgent implements Agent {
     public BinOpAgent(String agentName, String firstTopicName, String secondTopicName, String outputTopicName, BinaryOperator<Double> operation) {
         this.operation = operation;
         this.agentName = agentName;
-        this.topicManager = TopicManagerSingleton.get();
+        TopicManagerSingleton.TopicManager topicManager = TopicManagerSingleton.get();
 
         firstTopic = topicManager.getTopic(firstTopicName);
         secondTopic = topicManager.getTopic(secondTopicName);

@@ -7,10 +7,10 @@ public class Topic {
     public final String name;
 
     // Thread-safe list of agents that subscribe to this topic
-    public CopyOnWriteArrayList<Agent> subs;
+    public final CopyOnWriteArrayList<Agent> subs;
 
     // Thread-safe list of agents that publish to this topic
-    public CopyOnWriteArrayList<Agent> pubs;
+    public final CopyOnWriteArrayList<Agent> pubs;
 
     private volatile Message lastMessage;
 

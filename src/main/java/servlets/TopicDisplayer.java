@@ -7,17 +7,13 @@ import server.RequestParser;
 
 import java.io.IOException;
 import java.io.OutputStream;
-import java.nio.charset.StandardCharsets;
-import java.util.Map;
-import java.util.concurrent.ConcurrentHashMap;
 
-public class TopicDisplayer implements Servlet {
+public class TopicDisplayer extends BaseServlet {
 
     @Override
     public void handle(RequestParser.RequestInfo ri, OutputStream toClient) throws IOException {
-
         try {
-            String topicName = ri.getParameters().get("topic");
+            String topicName   = ri.getParameters().get("topic");
             String messageText = ri.getParameters().get("message");
 
             if (topicName == null || messageText == null) {
@@ -27,7 +23,6 @@ public class TopicDisplayer implements Servlet {
             }
 
             TopicManagerSingleton.TopicManager topicManager = TopicManagerSingleton.get();
-
             Topic topic = topicManager.getTopic(topicName);
 
             if (topic == null) {
@@ -36,78 +31,43 @@ public class TopicDisplayer implements Servlet {
                 return;
             }
 
-            Message msg = new Message(messageText);
-            topic.publish(msg);
-            StringBuilder json = new StringBuilder();
-            json.append("{\"topics\":[");
+            topic.publish(new Message(messageText));
 
-            boolean first = true;
-
-            for (Topic t : topicManager.getTopics()) {
-                if (!first) json.append(",");
-                first = false;
-
-                Message m = t.getLastMessage();
-
-                String value;
-                if (m == null) {
-                    value = "null";
-                } else if (!Double.isNaN(m.asDouble)) {
-                    value = Double.toString(m.asDouble);
-                } else {
-                    value = m.asText;
-                }
-
-                json.append("{")
-                        .append("\"name\":\"").append(escapeJson(t.name)).append("\",")
-                        .append("\"value\":\"").append(escapeJson(value)).append("\"")
-                        .append("}");
-            }
-
-            json.append("]}");
-
-            sendJsonResponse(toClient, 200, json.toString());
+            String json = buildTopicsJson(topicManager);
+            sendJsonResponse(toClient, json);
 
         } catch (Exception e) {
             e.printStackTrace();
-            sendResponse(toClient, 500,
-                    "<html><body>Server error</body></html>");
+            sendResponse(toClient, 500, "<html><body>Server error</body></html>");
         }
+    }
+
+    private String buildTopicsJson(TopicManagerSingleton.TopicManager topicManager) {
+        StringBuilder json = new StringBuilder("{\"topics\":[");
+        boolean first = true;
+
+        for (Topic t : topicManager.getTopics()) {
+            if (!first) json.append(",");
+            first = false;
+
+            Message m = t.getLastMessage();
+            String value = (m == null)              ? "null"
+                    : !Double.isNaN(m.asDouble) ? Double.toString(m.asDouble)
+                    : m.asText;
+
+            json.append("{")
+                    .append("\"name\":\"").append(escapeJson(t.name)).append("\",")
+                    .append("\"value\":\"").append(escapeJson(value)).append("\"")
+                    .append("}");
+        }
+
+        return json.append("]}").toString();
     }
 
     private String escapeJson(String s) {
         return s.replace("\"", "\\\"");
     }
 
-    private void sendJsonResponse(OutputStream out, int statusCode, String body) throws IOException {
-        byte[] bodyBytes = body.getBytes(StandardCharsets.UTF_8);
-
-        String response =
-                "HTTP/1.1 " + statusCode + " OK\r\n" +
-                        "Content-Type: application/json; charset=UTF-8\r\n" +
-                        "Content-Length: " + bodyBytes.length + "\r\n\r\n";
-
-        out.write(response.getBytes(StandardCharsets.UTF_8));
-        out.write(bodyBytes);
-        out.flush();
-    }
-
     @Override
-    public void close() throws IOException {}
-
-    private void sendResponse(OutputStream out, int statusCode, String body) throws IOException {
-        String statusText = (statusCode == 200) ? "OK" : "ERROR";
-
-        byte[] bodyBytes = body.getBytes(StandardCharsets.UTF_8);
-
-        String response =
-                "HTTP/1.1 " + statusCode + " " + statusText + "\r\n" +
-                        "Content-Type: text/html\r\n" +
-                        "Content-Length: " + bodyBytes.length + "\r\n" +
-                        "\r\n";
-
-        out.write(response.getBytes(StandardCharsets.UTF_8));
-        out.write(bodyBytes);
-        out.flush();
-    }
+    public void close() {}
 }

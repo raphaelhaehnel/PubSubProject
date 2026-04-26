@@ -6,7 +6,6 @@ public class IncAgent implements Agent {
 
     private final String[] subs;
     private final String[] pubs;
-    private Double result;
     private final TopicManager topicManager;
 
     public IncAgent(String[] subs, String[] pubs) {
@@ -43,7 +42,7 @@ public class IncAgent implements Agent {
         }
 
         if (pubs.length > 0) {
-            result = messageValue + 1.0;
+            double result = messageValue + 1.0;
             topicManager.getTopic(pubs[0]).publish(new Message(result));
         }
 

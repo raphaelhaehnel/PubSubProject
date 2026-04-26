@@ -18,7 +18,6 @@ import java.util.logging.Level;
 import java.util.logging.Logger;
 
 
-
 public class MyHTTPServer extends Thread implements HTTPServer {
 
     private static final Logger logger = Logger.getLogger(MyHTTPServer.class.getName());
@@ -121,16 +120,12 @@ public class MyHTTPServer extends Thread implements HTTPServer {
     }
 
     private Map<String, Servlet> getServletMap(String httpCommand) {
-        switch (httpCommand) {
-            case "GET":
-                return getToServletMap;
-            case "POST":
-                return postToServletMap;
-            case "DELETE":
-                return deleteToServletMap;
-            default:
-                return null;
-        }
+        return switch (httpCommand) {
+            case "GET" -> getToServletMap;
+            case "POST" -> postToServletMap;
+            case "DELETE" -> deleteToServletMap;
+            default -> null;
+        };
     }
 
     private void closeAndRemoveServlet(Map<String, Servlet> servletMap, String uri) {
@@ -150,7 +145,6 @@ public class MyHTTPServer extends Thread implements HTTPServer {
         executor = Executors.newFixedThreadPool(nThreads);
         logger.fine("Server initialized, thread pool created.");
     }
-
 
     private ServerSocket createServerSocket() throws IOException {
         serverSocket = new ServerSocket(port);
@@ -176,8 +170,8 @@ public class MyHTTPServer extends Thread implements HTTPServer {
     }
 
     private void processClientRequest(BufferedReader br, OutputStream out) throws IOException {
-        RequestParser.RequestInfo ri = null;
-        String requestIdentifier = "Unknown Request";
+        RequestParser.RequestInfo ri;
+        String requestIdentifier;
         try {
             ri = RequestParser.parseRequest(br);
             requestIdentifier = ri.getHttpCommand() + " " + ri.getUri();
@@ -186,7 +180,7 @@ public class MyHTTPServer extends Thread implements HTTPServer {
             if (e.getMessage() == null || !e.getMessage().contains("Empty or null request line")) {
                 logger.log(Level.WARNING, "IOException during request parsing: {0}", e.getMessage());
                 try {
-                    writeBadRequest(out, "Malformed request reading failed");
+                    writeBadRequest(out);
                 } catch (IOException ioe) {
                     logger.log(Level.WARNING, "Failed to send 400 error response.", ioe);
                 }
@@ -218,7 +212,7 @@ public class MyHTTPServer extends Thread implements HTTPServer {
             logger.log(Level.SEVERE, "Error executing servlet " + servlet.getClass().getName() + " for request " + requestIdentifier, e);
             try {
                 if (out != null) {
-                    writeInternalError(out, "Servlet execution failed");
+                    writeInternalError(out);
                 }
             } catch (IOException ioe) {
                 logger.log(Level.WARNING, "Failed to send 500 error response after servlet error.", ioe);
@@ -230,7 +224,6 @@ public class MyHTTPServer extends Thread implements HTTPServer {
         Map<String, Servlet> servletMap = getServletMap(httpCommand);
         return matchServletToUri(uri, servletMap);
     }
-
 
     private Servlet matchServletToUri(String uri, Map<String, Servlet> uriToServlet) {
         Servlet matchingServlet = null;
@@ -252,16 +245,15 @@ public class MyHTTPServer extends Thread implements HTTPServer {
         return matchingServlet;
     }
 
-    private void writeBadRequest(OutputStream out, String msg) throws IOException {
+    private void writeBadRequest(OutputStream out) throws IOException {
         String resp = "HTTP/1.1 400 Bad Request\r\n" +
                 "Content-Type: text/plain\r\n" +
-                "Content-Length: " + msg.getBytes(java.nio.charset.StandardCharsets.UTF_8).length + "\r\n" +
+                "Content-Length: " + "Malformed request reading failed".getBytes(java.nio.charset.StandardCharsets.UTF_8).length + "\r\n" +
                 "Connection: close\r\n\r\n" +
-                msg;
+                "Malformed request reading failed";
         out.write(resp.getBytes(java.nio.charset.StandardCharsets.UTF_8));
         out.flush();
     }
-
 
     private void writeNotFound(OutputStream out, String msg) throws IOException {
         String resp = "HTTP/1.1 404 Not Found\r\n" +
@@ -273,17 +265,15 @@ public class MyHTTPServer extends Thread implements HTTPServer {
         out.flush();
     }
 
-
-    private void writeInternalError(OutputStream out, String msg) throws IOException {
+    private void writeInternalError(OutputStream out) throws IOException {
         String resp = "HTTP/1.1 500 Internal Server Error\r\n" +
                 "Content-Type: text/plain\r\n" +
-                "Content-Length: " + msg.getBytes(java.nio.charset.StandardCharsets.UTF_8).length + "\r\n" +
+                "Content-Length: " + "Servlet execution failed".getBytes(java.nio.charset.StandardCharsets.UTF_8).length + "\r\n" +
                 "Connection: close\r\n\r\n" +
-                msg;
+                "Servlet execution failed";
         out.write(resp.getBytes(java.nio.charset.StandardCharsets.UTF_8));
         out.flush();
     }
-
 
     private void stopServer() {
         running = false;
@@ -297,7 +287,6 @@ public class MyHTTPServer extends Thread implements HTTPServer {
             }
         }
     }
-
 
     private void closeAllServlets() {
         logger.fine("Closing all registered servlets...");
@@ -314,7 +303,6 @@ public class MyHTTPServer extends Thread implements HTTPServer {
         }
         logger.fine("Finished closing servlets.");
     }
-
 
     private void closeExecutor() {
         if (executor != null) {

@@ -9,8 +9,7 @@ public class PlusAgent implements Agent {
     private Double secondOperand;
     private final String[] subs;
     private final String[] pubs;
-    private Double result;
-    private TopicManager topicManager;
+    private final TopicManager topicManager;
 
     public PlusAgent(String[] subs, String[] pubs) {
 
@@ -59,7 +58,7 @@ public class PlusAgent implements Agent {
         }
 
         if (firstOperand != null && secondOperand != null && pubs.length > 0) {
-            result = firstOperand + secondOperand;
+            double result = firstOperand + secondOperand;
             topicManager.getTopic(pubs[0]).publish(new Message(result));
         }
 

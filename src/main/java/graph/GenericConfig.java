@@ -126,7 +126,7 @@ public class GenericConfig implements Config {
                 lines.add(line);
             }
         } catch (IOException e) {
-
+            //TODO handle this
         }
 
         return lines;
