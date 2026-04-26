@@ -13,7 +13,7 @@ The backend implements a publisher-subscriber mechanism: publishers can publish 
 
 - Java 17 or higher 
 - Web browser (Chrome recommended)
-- Internet connection (the Vis.js library required internet connection)
+- Internet connection (the Vis.js library requires internet connection)
 
 ## Usage
 

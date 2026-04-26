@@ -38,6 +38,10 @@ public class ConfLoader implements Servlet {
             Graph graph = new Graph();
             graph.createFromTopics();
 
+            if (graph.hasCycles()) {
+                throw new RuntimeException("The current configuration has cycles. Please provide a graph without cycles.");
+            }
+
             String json = HtmlGraphWriter.getGraphJSON(graph);
             sendJsonResponse(toClient, 200, json);
 

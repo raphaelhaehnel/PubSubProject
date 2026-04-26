@@ -16,12 +16,18 @@ public class GenericConfig implements Config {
 
     private final List<Agent> instantiatedAgents = new ArrayList<>();
 
+    public GenericConfig() {
+        TopicManagerSingleton.TopicManager topicManager = TopicManagerSingleton.get();
+        topicManager.clear();
+    }
+
     public void setConfFile(String configPath) {
         this.configPath = configPath;
     }
 
     public void create() {
         if (configPath == null) return;
+
         List<String> lines = getText();
 
         if (lines.size() % 3 != 0) return;
@@ -59,6 +65,7 @@ public class GenericConfig implements Config {
         return line.split(",");
     }
 
+    //TODO these functions are not used
     private void validateTopicCount(String line, int expectedCount, int lineNumber, String agentType, String action) {
         String[] topics = parseTopics(line);
         if (topics.length != expectedCount) {

@@ -70,16 +70,4 @@ public class HtmlGraphWriter {
         return s.replace("\"", "\\\"")
                 .replace("\n", "\\n");
     }
-
-    private static String escapeJS(String s) {
-        return s.replace("'", "\\'")
-                .replace("\"", "\\\"")
-                .replace("\n", "\\n");
-    }
-
-    private static String getNodeTypeClass(String name) {
-        if (name.startsWith("T")) return "topic";
-        if (name.startsWith("A")) return "agent";
-        return "";
-    }
 }
