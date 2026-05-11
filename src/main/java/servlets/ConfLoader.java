@@ -14,7 +14,7 @@ import java.nio.file.Paths;
 
 public class ConfLoader extends BaseServlet {
 
-    private static final String TEMP_FILE = "uploaded_config.txt";
+    private static final String TEMP_FILE = "uploaded_config.json";
 
     @Override
     public void handle(RequestParser.RequestInfo ri, OutputStream toClient) throws IOException {

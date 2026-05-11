@@ -10,8 +10,13 @@
 
 <div id="left">
     <h3>Upload Config</h3>
-    <textarea id="config"></textarea>
-    <button onclick="upload()">Deploy</button>
+    <div id="drop-zone">
+        <p>Drop your <code>.json</code> config here</p>
+        <span id="file-name">No file selected</span>
+    </div>
+    <input type="file" id="fileInput" accept=".json" style="display:none">
+    <button id="btn-browse" onclick="document.getElementById('fileInput').click()">Upload manually</button>
+    <button onclick="deploy()">Deploy</button>
 
     <hr>
 
@@ -37,6 +42,7 @@
 <script>
     initGraph();
     loadGraph();
+    initDropZone();
 </script>
 
 </body>

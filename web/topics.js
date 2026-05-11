@@ -1,3 +1,49 @@
+let selectedFile = null;
+
+function setSelectedFile(file) {
+    if (!file) return;
+    selectedFile = file;
+    const nameEl = document.getElementById("file-name");
+    const zone = document.getElementById("drop-zone");
+    nameEl.textContent = file.name;
+    zone.classList.add("has-file");
+}
+
+function initDropZone() {
+    const zone = document.getElementById("drop-zone");
+    const fileInput = document.getElementById("fileInput");
+
+    zone.addEventListener("click", () => fileInput.click());
+
+    zone.addEventListener("dragover", (e) => {
+        e.preventDefault();
+        zone.classList.add("drag-over");
+    });
+
+    zone.addEventListener("dragleave", () => zone.classList.remove("drag-over"));
+
+    zone.addEventListener("drop", (e) => {
+        e.preventDefault();
+        zone.classList.remove("drag-over");
+        const file = e.dataTransfer.files[0];
+        if (file) setSelectedFile(file);
+    });
+
+    fileInput.addEventListener("change", () => {
+        if (fileInput.files[0]) setSelectedFile(fileInput.files[0]);
+    });
+}
+
+async function deploy() {
+    if (!selectedFile) {
+        alert("Please select a config file first.");
+        return;
+    }
+    const text = await selectedFile.text();
+    await sendConfig(text);
+    await loadGraph();
+}
+
 async function publish() {
     const topic = document.getElementById("topic").value;
     const message = document.getElementById("message").value;
@@ -5,13 +51,6 @@ async function publish() {
     const data = await sendPublish(topic, message);
 
     renderTopics(data);
-    await loadGraph();
-}
-
-async function upload() {
-    const config = document.getElementById("config").value;
-
-    await sendConfig(config);
     await loadGraph();
 }
 
