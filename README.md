@@ -12,6 +12,8 @@ to these topics to automatically get new published messages. The agents
 that perform the computations form a directed graph that the user can
 visualize and interact with in the browser.
 
+<img width="1919" height="913" alt="app-screenshot" src="https://github.com/user-attachments/assets/642991b4-ca59-45fe-84e1-25f075c455c3" />
+
 ---
 
 ## Features
