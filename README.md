@@ -38,10 +38,6 @@ visualize and interact with in the browser.
   JSON file, using Java reflection.
 - A **graph view**: every topic / agent is shown as a node, with the
   latest message displayed under the node name.
-- Cycle detection: a configuration that would create an infinite loop
-  is rejected when uploaded.
-- All agents are wrapped in `ParallelAgent`, which runs their callbacks
-  on a dedicated worker thread (so a slow agent does not block others).
 
 ---
 
@@ -51,7 +47,7 @@ visualize and interact with in the browser.
 - Maven (for dependency management; only `jackson-databind` is used)
 - A web browser (Chrome recommended)
 - An internet connection (the Vis.js library used by the frontend is
-  loaded from a CDN)
+  loaded from an external server)
 
 ---
 
@@ -125,44 +121,9 @@ This creates the following graph:
    B ─┘
 ```
 
-After deploying this config, publishing `A = 3` and `B = 4` will cause
-`C` to become `7.0`, and `D` to become `8.0`.
 
-### A bigger example using `MulAgent`, `DivAgent` and `AvgAgent`
 
-```json
-{
-  "agents": [
-    { "type": "MulAgent", "subs": ["X", "Y"], "pubs": ["P"] },
-    { "type": "DivAgent", "subs": ["P", "Z"], "pubs": ["Q"] },
-    { "type": "AvgAgent", "subs": ["Q", "W"], "pubs": ["RESULT"] }
-  ]
-}
-```
 
-This computes `RESULT = ( (X * Y) / Z + W ) / 2`. For example,
-publishing `X=6`, `Y=4`, `Z=3`, `W=2` yields `RESULT = 5.0`.
-
-### Multi-input example
-
-`PlusAgent`, `MulAgent` and `AvgAgent` are not limited to two inputs.
-This config sums four inputs and averages five:
-
-```json
-{
-  "agents": [
-    { "type": "PlusAgent", "subs": ["A", "B", "C", "D"], "pubs": ["SUM"] },
-    { "type": "AvgAgent",  "subs": ["A", "B", "C", "D", "E"], "pubs": ["MEAN"] }
-  ]
-}
-```
-
-If you publish `A=1, B=2, C=3, D=4, E=5`, then:
-
-- `SUM = 1 + 2 + 3 + 4 = 10`
-- `MEAN = (1 + 2 + 3 + 4 + 5) / 5 = 3.0`
-
-There is no maximum number of inputs per agent.
 
 ### Rules
 
