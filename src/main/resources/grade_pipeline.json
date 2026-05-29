@@ -1,0 +1,34 @@
+{
+  "agents": [
+    {
+      "note": "Add 1 bonus point to the raw exam score",
+      "type": "IncAgent",
+      "subs": ["A"],
+      "pubs": ["D"]
+    },
+    {
+      "note": "Sum the boosted exam score and the homework score",
+      "type": "PlusAgent",
+      "subs": ["D", "B"],
+      "pubs": ["E"]
+    },
+    {
+      "note": "Compute the plain average of the original scores (before bonus)",
+      "type": "AvgAgent",
+      "subs": ["A", "B"],
+      "pubs": ["F"]
+    },
+    {
+      "note": "Apply the extra-credit multiplier to the academic total",
+      "type": "MulAgent",
+      "subs": ["E", "C"],
+      "pubs": ["G"]
+    },
+    {
+      "note": "Normalize the weighted total by the plain average",
+      "type": "DivAgent",
+      "subs": ["G", "F"],
+      "pubs": ["H"]
+    }
+  ]
+}

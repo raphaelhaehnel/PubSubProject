@@ -1,0 +1,6 @@
+{
+  "agents": [
+    { "type": "PlusAgent", "subs": ["A", "B"], "pubs": ["C"] },
+    { "type": "IncAgent",  "subs": ["C"],      "pubs": ["D"] }
+  ]
+}

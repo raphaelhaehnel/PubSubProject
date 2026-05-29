@@ -36,9 +36,13 @@ public class HtmlGraphWriter {
 
                 String color = node.getName().startsWith("T") ? "lightblue" : "lightgreen";
 
+                String displayName = node.getName().length() > 1
+                        ? node.getName().substring(1)
+                        : node.getName();
+
                 json.append("{")
                         .append("\"id\":").append(nodeIds.get(node.getName())).append(",")
-                        .append("\"label\":\"").append(escapeJson(node.getName()));
+                        .append("\"label\":\"").append(escapeJson(displayName));
 
                 Message message = node.getMsg();
                 if (message != null && message.asText != null) {
