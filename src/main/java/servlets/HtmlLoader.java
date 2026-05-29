@@ -10,6 +10,10 @@ import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.Map;
 
+/**
+ * GET /app/... : serves static files from the configured base directory.
+ * A bare "/app" request is mapped to "index.html".
+ */
 public class HtmlLoader extends BaseServlet {
 
     private static final Map<String, String> CONTENT_TYPES = Map.of(
@@ -63,6 +67,7 @@ public class HtmlLoader extends BaseServlet {
         }
     }
 
+    /** Picks a MIME type by file extension; defaults to text/plain. */
     private String getContentType(String fileName) {
         return CONTENT_TYPES.entrySet().stream()
                 .filter(e -> fileName.endsWith(e.getKey()))

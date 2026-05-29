@@ -2,6 +2,10 @@ package graph;
 
 import java.util.function.BinaryOperator;
 
+/**
+ * Generic two-input agent that applies a {@link BinaryOperator} on the
+ * two inputs and publishes the result.
+ */
 public class BinOpAgent implements Agent {
 
     private final BinaryOperator<Double> operation;

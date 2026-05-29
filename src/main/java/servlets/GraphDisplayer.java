@@ -7,6 +7,10 @@ import view.HtmlGraphWriter;
 import java.io.IOException;
 import java.io.OutputStream;
 
+/**
+ * GET /graph : returns the current graph (topics + agents + edges +
+ * latest values) as JSON for the front-end to render.
+ */
 public class GraphDisplayer extends BaseServlet {
 
     @Override

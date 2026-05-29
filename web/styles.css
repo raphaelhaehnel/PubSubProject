@@ -110,6 +110,15 @@ button:hover {
     background: #45a049;
 }
 
+/* Reset button: red-ish so it stands out as a destructive action. */
+#btn-reset {
+    background: #e74c3c;
+}
+
+#btn-reset:hover {
+    background: #c0392b;
+}
+
 /* Topics UI */
 .topic-card {
     background: white;

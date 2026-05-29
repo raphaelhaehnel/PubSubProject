@@ -18,14 +18,23 @@ import java.util.logging.Level;
 import java.util.logging.Logger;
 
 
+/**
+ * Minimal multithreaded HTTP server built on top of plain Sockets.
+ * Listens on a port, accepts connections on the main thread, and hands
+ * each one to a fixed-size worker pool.
+ * One servlet map per supported HTTP method (GET, POST, DELETE).
+ */
 public class MyHTTPServer extends Thread implements HTTPServer {
 
     private static final Logger logger = Logger.getLogger(MyHTTPServer.class.getName());
+
     private final int port;
     private final int nThreads;
+
     private final ConcurrentHashMap<String, Servlet> getToServletMap;
     private final ConcurrentHashMap<String, Servlet> postToServletMap;
     private final ConcurrentHashMap<String, Servlet> deleteToServletMap;
+
     private volatile boolean running;
     private ServerSocket serverSocket;
     private ExecutorService executor;
@@ -69,6 +78,8 @@ public class MyHTTPServer extends Thread implements HTTPServer {
     public void start() {
         if (!running) {
             initializeServer();
+            // MyHTTPServer extends Thread; super.start() runs run() on a
+            // background thread so this method can return immediately.
             super.start();
             logger.log(Level.INFO, "MyHTTPServer started on port {0} with {1} threads.", new Object[]{port, nThreads});
         } else {
@@ -100,6 +111,7 @@ public class MyHTTPServer extends Thread implements HTTPServer {
         logger.info("Server shutdown complete.");
     }
 
+    /** Runs in a worker thread, once per accepted connection. */
     private void handleClient(Socket client) {
         logger.log(Level.INFO, "Connection received from: {0}", client.getRemoteSocketAddress());
         try (Socket c = client;
@@ -107,6 +119,8 @@ public class MyHTTPServer extends Thread implements HTTPServer {
              OutputStream out = c.getOutputStream()) {
             processClientRequest(br, out);
         } catch (IOException e) {
+            // Browsers often pre-open and close connections without sending
+            // anything; we swallow those silently to keep the log readable.
             if (e.getMessage() != null && e.getMessage().contains("Empty or null request line")) {
                 logger.log(Level.INFO, "Client connected but sent no data or closed connection early: {0}", client.getRemoteSocketAddress());
             } else {
@@ -143,30 +157,29 @@ public class MyHTTPServer extends Thread implements HTTPServer {
     private void initializeServer() {
         running = true;
         executor = Executors.newFixedThreadPool(nThreads);
-        logger.fine("Server initialized, thread pool created.");
     }
 
     private ServerSocket createServerSocket() throws IOException {
         serverSocket = new ServerSocket(port);
+        // Short accept() timeout so the loop can check the running flag
+        // and exit cleanly when close() is called.
         serverSocket.setSoTimeout(1000);
         return serverSocket;
     }
 
     private void acceptClientConnections(ServerSocket ss) {
-        logger.info("Server ready to accept connections...");
         while (running) {
             try {
                 Socket client = ss.accept();
                 executor.submit(() -> handleClient(client));
             } catch (SocketTimeoutException e) {
-                // Timeout occurred - just loop again to check if we're still running
+                // expected: just loop and re-check "running"
             } catch (IOException e) {
                 if (running) {
                     logger.log(Level.WARNING, "IOException accepting client connection", e);
                 }
             }
         }
-        logger.info("Stopped accepting connections.");
     }
 
     private void processClientRequest(BufferedReader br, OutputStream out) throws IOException {
@@ -175,7 +188,6 @@ public class MyHTTPServer extends Thread implements HTTPServer {
         try {
             ri = RequestParser.parseRequest(br);
             requestIdentifier = ri.getHttpCommand() + " " + ri.getUri();
-            logger.log(Level.FINE, "Processing request: {0}", requestIdentifier);
         } catch (IOException e) {
             if (e.getMessage() == null || !e.getMessage().contains("Empty or null request line")) {
                 logger.log(Level.WARNING, "IOException during request parsing: {0}", e.getMessage());
@@ -203,11 +215,7 @@ public class MyHTTPServer extends Thread implements HTTPServer {
         }
 
         try {
-            logger.log(Level.FINE, "Dispatching request {0} to servlet {1}",
-                    new Object[]{requestIdentifier, servlet.getClass().getName()});
             servlet.handle(ri, out);
-            logger.log(Level.FINE, "Servlet {0} finished handling request {1}",
-                    new Object[]{servlet.getClass().getName(), requestIdentifier});
         } catch (Exception e) {
             logger.log(Level.SEVERE, "Error executing servlet " + servlet.getClass().getName() + " for request " + requestIdentifier, e);
             try {
@@ -225,10 +233,10 @@ public class MyHTTPServer extends Thread implements HTTPServer {
         return matchServletToUri(uri, servletMap);
     }
 
+    /** Longest-prefix URI match: more specific patterns win. */
     private Servlet matchServletToUri(String uri, Map<String, Servlet> uriToServlet) {
         Servlet matchingServlet = null;
         int longestPrefixLength = -1;
-        String matchedUri = null;
 
         if (uriToServlet == null) return null;
 
@@ -236,11 +244,7 @@ public class MyHTTPServer extends Thread implements HTTPServer {
             if (uri.startsWith(currentUri) && currentUri.length() > longestPrefixLength) {
                 longestPrefixLength = currentUri.length();
                 matchingServlet = uriToServlet.get(currentUri);
-                matchedUri = currentUri;
             }
-        }
-        if (matchingServlet != null) {
-            logger.log(Level.FINER, "Matched URI {0} to servlet pattern {1}", new Object[]{uri, matchedUri});
         }
         return matchingServlet;
     }
@@ -277,11 +281,9 @@ public class MyHTTPServer extends Thread implements HTTPServer {
 
     private void stopServer() {
         running = false;
-        logger.fine("Setting running flag to false.");
         if (serverSocket != null) {
             try {
                 serverSocket.close();
-                logger.info("Server socket closed.");
             } catch (IOException e) {
                 logger.log(Level.WARNING, "Error closing server socket", e);
             }
@@ -289,7 +291,6 @@ public class MyHTTPServer extends Thread implements HTTPServer {
     }
 
     private void closeAllServlets() {
-        logger.fine("Closing all registered servlets...");
         for (Map<String, Servlet> servletMap : new Map[]{getToServletMap, postToServletMap, deleteToServletMap}) {
             if (servletMap != null) {
                 for (Servlet servlet : servletMap.values()) {
@@ -301,12 +302,11 @@ public class MyHTTPServer extends Thread implements HTTPServer {
                 }
             }
         }
-        logger.fine("Finished closing servlets.");
     }
 
+    /** Graceful shutdown of the worker pool, with a forced shutdown after 5s. */
     private void closeExecutor() {
         if (executor != null) {
-            logger.fine("Shutting down executor service...");
             executor.shutdown();
             try {
                 if (!executor.awaitTermination(5, TimeUnit.SECONDS)) {
@@ -316,7 +316,6 @@ public class MyHTTPServer extends Thread implements HTTPServer {
                         logger.severe("Executor did not terminate even after forced shutdown.");
                     }
                 }
-                logger.info("Executor service shut down.");
             } catch (InterruptedException e) {
                 logger.log(Level.WARNING, "Interrupted while waiting for executor shutdown", e);
                 executor.shutdownNow();

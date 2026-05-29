@@ -2,6 +2,9 @@ package graph;
 
 import graph.TopicManagerSingleton.TopicManager;
 
+/**
+ * Publishes subs[0] + 1 on pubs[0] every time it receives a message.
+ */
 public class IncAgent implements Agent {
 
     private final String[] subs;
@@ -18,7 +21,6 @@ public class IncAgent implements Agent {
         if (subs.length > 0) {
             topicManager.getTopic(subs[0]).subscribe(this);
         }
-
         if (pubs.length > 0) {
             topicManager.getTopic(pubs[0]).addPublisher(this);
         }
@@ -36,7 +38,6 @@ public class IncAgent implements Agent {
     @Override
     public void callback(String topic, Message msg) {
         double messageValue = msg.asDouble;
-
         if (Double.isNaN(messageValue)) {
             return;
         }
@@ -45,7 +46,6 @@ public class IncAgent implements Agent {
             double result = messageValue + 1.0;
             topicManager.getTopic(pubs[0]).publish(new Message(result));
         }
-
     }
 
     @Override
@@ -58,4 +58,3 @@ public class IncAgent implements Agent {
         }
     }
 }
-

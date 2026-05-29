@@ -4,6 +4,11 @@ import java.util.concurrent.ArrayBlockingQueue;
 import java.util.concurrent.BlockingQueue;
 import java.util.concurrent.atomic.AtomicBoolean;
 
+/**
+ * Wraps an agent so its callback runs on its own thread.
+ * The publishing thread just drops the message in a bounded queue and
+ * returns immediately, so a slow agent cannot block its publishers.
+ */
 public class ParallelAgent implements Agent {
 
     private final BlockingQueue<Message> messagesQueue;
@@ -21,12 +26,11 @@ public class ParallelAgent implements Agent {
                     Message message = messagesQueue.take();
                     agent.callback(currentTopic, message);
                 } catch (InterruptedException e) {
-//                    System.out.println("ParallelAgent thread interrupted");
+                    // Nothing to do here
                 }
             }
         });
         thread.start();
-
     }
 
     @Override
@@ -40,7 +44,7 @@ public class ParallelAgent implements Agent {
             currentTopic = topic;
             messagesQueue.put(msg);
         } catch (InterruptedException e) {
-//            System.out.println("Agent callback interrupted");
+            // ignored: caller will get back control
         }
     }
 

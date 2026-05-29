@@ -12,8 +12,14 @@ import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Paths;
 
+/**
+ * POST /upload : accepts a JSON configuration in the "config" form
+ * field, rebuilds the agent graph, and returns the new graph as JSON.
+ * Cyclic configurations are rejected.
+ */
 public class ConfLoader extends BaseServlet {
 
+    // GenericConfig reads from a File, so we write the upload to disk first.
     private static final String TEMP_FILE = "uploaded_config.json";
 
     @Override

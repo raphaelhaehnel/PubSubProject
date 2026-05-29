@@ -6,14 +6,21 @@ import java.util.Arrays;
 import java.util.LinkedHashMap;
 import java.util.Map;
 
+/**
+ * Minimal HTTP request parser.
+ * Query-string parameters and form-encoded body parameters are merged
+ * into a single "parameters" map for convenience.
+ */
 public class RequestParser {
 
+    /** Parses a full HTTP request (request line + headers + optional body). */
     public static RequestInfo parseRequest(BufferedReader reader) throws IOException {
         String requestLine = readRequestLine(reader);
         String[] requestLineParts = splitRequestLine(requestLine);
         validateRequestLine(requestLineParts);
         String httpCommand = extractHttpCommand(requestLineParts);
         String uri = extractUri(requestLineParts);
+
         String resourceUri = extractResourceUri(uri);
         String[] uriSegments = extractUriSegments(resourceUri);
 
@@ -22,7 +29,6 @@ public class RequestParser {
 
         int contentLength = parseContentLength(headers);
         byte[] content = readContent(reader, contentLength);
-
         readBodyParameters(content, parameters);
 
         return new RequestInfo(httpCommand, uri, resourceUri, uriSegments, parameters, content);
@@ -30,15 +36,14 @@ public class RequestParser {
 
     private static String readRequestLine(BufferedReader reader) throws IOException {
         String requestLine = reader.readLine();
-
         if (requestLine == null || requestLine.isEmpty()) {
             throw new IOException("Empty or null request line received.");
         }
-
         return requestLine;
     }
 
     private static String[] splitRequestLine(String line) {
+        // Split into at most 3 parts so the HTTP version stays intact.
         return line.split("\\s+", 3);
     }
 
@@ -59,14 +64,15 @@ public class RequestParser {
         return "";
     }
 
+    /** "/publish?topic=A" -> "/publish". */
     private static String extractResourceUri(String uri) {
         if (uri.contains("?")) {
             return uri.substring(0, uri.indexOf('?'));
         }
-
         return uri;
     }
 
+    /** "/app/api.js" -> ["app", "api.js"]. */
     private static String[] extractUriSegments(String resourceUri) {
         return Arrays.stream(resourceUri.split("/"))
                 .filter(part -> !part.isEmpty())
@@ -86,15 +92,14 @@ public class RequestParser {
                 parseParameter(param, parameters);
             }
         }
-
         return parameters;
     }
 
+    /** Parses a form-encoded body and merges its keys into {@code parameters}. */
     private static void readBodyParameters(byte[] content, Map<String, String> parameters) {
         if (content.length == 0) return;
 
         String body = new String(content, java.nio.charset.StandardCharsets.UTF_8);
-
         for (String param : body.split("&")) {
             if (!param.isEmpty()) {
                 parseParameter(param, parameters);
@@ -104,7 +109,6 @@ public class RequestParser {
 
     private static void parseParameter(String param, Map<String, String> parameters) {
         String[] keyValuePair = param.split("=", 2);
-
         if (keyValuePair.length == 0 || keyValuePair[0].trim().isEmpty()) {
             return;
         }
@@ -116,15 +120,13 @@ public class RequestParser {
     private static Map<String, String> readHeaders(BufferedReader reader) throws IOException {
         Map<String, String> headers = new LinkedHashMap<>();
         String line;
-
+        // Headers end at the empty line that separates them from the body.
         while ((line = reader.readLine()) != null && !line.isEmpty()) {
             String[] headerParts = line.split(":", 2);
-
             if (headerParts.length == 2) {
                 headers.put(headerParts[0].trim(), headerParts[1].trim());
             }
         }
-
         return headers;
     }
 
@@ -136,36 +138,32 @@ public class RequestParser {
         char[] buffer = new char[contentLength];
         int totalRead = 0;
 
+        // read() may return fewer chars than requested - loop until done.
         while (totalRead < contentLength) {
             int read = reader.read(buffer, totalRead, contentLength - totalRead);
             if (read == -1) break;
             totalRead += read;
         }
-
         return new String(buffer, 0, totalRead).getBytes(java.nio.charset.StandardCharsets.UTF_8);
     }
 
     private static int parseContentLength(Map<String, String> headers) throws IOException {
         String contentLengthHeader = headers.get("Content-Length");
-
         if (contentLengthHeader == null) {
             return 0;
         }
-
         try {
             int contentLength = Integer.parseInt(contentLengthHeader.trim());
-
             if (contentLength < 0) {
                 throw new IOException("Invalid Content-Length (negative value): " + contentLengthHeader);
             }
-
             return contentLength;
         } catch (NumberFormatException e) {
             throw new IOException("Invalid Content-Length header value: " + contentLengthHeader, e);
         }
     }
-	
-	// RequestInfo given internal class
+
+    /** Immutable holder for everything extracted from a request. */
     public static class RequestInfo {
         private final String httpCommand;
         private final String uri;

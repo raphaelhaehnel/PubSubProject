@@ -9,6 +9,22 @@ import java.lang.reflect.Constructor;
 import java.util.ArrayList;
 import java.util.List;
 
+/**
+ * Builds agents from a JSON configuration file of the form:
+ * <pre>
+ * {
+ *   "agents": [
+ *     { "type": "PlusAgent", "subs": ["A", "B"], "pubs": ["C"] },
+ *     { "type": "IncAgent",  "subs": ["C"],      "pubs": ["D"] }
+ *   ]
+ * }
+ * </pre>
+ * "type" must name a class in the graph package with a
+ * <code>(String[] subs, String[] pubs)</code> constructor; it is loaded
+ * by reflection so adding a new agent does not require changing this class.
+ * Every agent is wrapped in a {@link ParallelAgent} so its callback runs
+ * on its own thread.
+ */
 public class GenericConfig implements Config {
 
     private static final String AGENT_PACKAGE = "graph.";
@@ -18,6 +34,7 @@ public class GenericConfig implements Config {
     private final List<Agent> instantiatedAgents = new ArrayList<>();
 
     public GenericConfig() {
+        // Start from a clean state every time a new configuration is built.
         TopicManagerSingleton.get().clear();
     }
 
@@ -82,6 +99,7 @@ public class GenericConfig implements Config {
         instantiatedAgents.clear();
     }
 
+    /** Reads a JSON array of strings into a String[] (empty if missing). */
     private static String[] readTopicArray(JsonNode entry, String field) {
         JsonNode node = entry.get(field);
         if (node == null || !node.isArray()) return new String[0];

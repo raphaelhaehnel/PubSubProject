@@ -1,5 +1,8 @@
+// Handles the config-upload drop zone and the publish / reset buttons.
+
 let selectedFile = null;
 
+/** Stores the picked file and updates the drop-zone label. */
 function setSelectedFile(file) {
     if (!file) return;
     selectedFile = file;
@@ -9,6 +12,7 @@ function setSelectedFile(file) {
     zone.classList.add("has-file");
 }
 
+/** Wires the drop zone events (click, dragover, drop, manual upload). */
 function initDropZone() {
     const zone = document.getElementById("drop-zone");
     const fileInput = document.getElementById("fileInput");
@@ -16,7 +20,7 @@ function initDropZone() {
     zone.addEventListener("click", () => fileInput.click());
 
     zone.addEventListener("dragover", (e) => {
-        e.preventDefault();
+        e.preventDefault(); // needed so the "drop" event fires
         zone.classList.add("drag-over");
     });
 
@@ -34,6 +38,7 @@ function initDropZone() {
     });
 }
 
+/** Sends the selected config file to the server and refreshes the graph. */
 async function deploy() {
     if (!selectedFile) {
         alert("Please select a config file first.");
@@ -44,6 +49,7 @@ async function deploy() {
     await loadGraph();
 }
 
+/** Publishes one message and refreshes both the sidebar and the graph. */
 async function publish() {
     const topic = document.getElementById("topic").value;
     const message = document.getElementById("message").value;
@@ -54,6 +60,14 @@ async function publish() {
     await loadGraph();
 }
 
+/** Triggers a server-side reset and refreshes the UI. */
+async function resetAll() {
+    const data = await sendReset();
+    renderTopics(data);
+    await loadGraph();
+}
+
+/** Re-renders the right-side topic cards from a /publish or /reset response. */
 function renderTopics(data) {
     const container = document.getElementById("table");
 
@@ -63,7 +77,6 @@ function renderTopics(data) {
     }
 
     let html = "";
-
     for (const t of data.topics) {
         html += `
             <div class="topic-card">
@@ -72,6 +85,5 @@ function renderTopics(data) {
             </div>
         `;
     }
-
     container.innerHTML = html;
 }

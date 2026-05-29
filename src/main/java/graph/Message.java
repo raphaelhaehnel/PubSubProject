@@ -2,6 +2,12 @@ package graph;
 
 import java.util.Date;
 
+/**
+ * A message exchanged between topics and agents.
+ * The same payload is stored in three forms (bytes, text, double) so
+ * agents can read whichever one they need. If the text is not a valid
+ * number, asDouble is {@link Double#NaN}.
+ */
 public class Message {
     public final byte[] data;
     public final String asText;
@@ -27,6 +33,7 @@ public class Message {
         this(Double.toString(number).getBytes(), Double.toString(number), number);
     }
 
+    /** Returns NaN instead of throwing when the text is not a number. */
     private static double parseDouble(String s) {
         try {
             return Double.parseDouble(s);

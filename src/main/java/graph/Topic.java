@@ -3,13 +3,17 @@ package graph;
 import java.util.List;
 import java.util.concurrent.CopyOnWriteArrayList;
 
+/**
+ * One channel of the pub-sub system: agents subscribe to receive its
+ * messages, others register as publishers.
+ * Topics are created through {@link TopicManagerSingleton}, never directly.
+ */
 public class Topic {
     public final String name;
 
-    // Thread-safe list of agents that subscribe to this topic
+    // CopyOnWriteArrayList: subscribers list is read much more often than
+    // written and may be iterated while another thread modifies it.
     public final CopyOnWriteArrayList<Agent> subs;
-
-    // Thread-safe list of agents that publish to this topic
     public final CopyOnWriteArrayList<Agent> pubs;
 
     private volatile Message lastMessage;
@@ -28,6 +32,7 @@ public class Topic {
         subs.remove(agent);
     }
 
+    /** Notify every subscriber and remember the message as the latest one. */
     public void publish(Message msg) {
         lastMessage = msg;
         subs.forEach(publisher -> publisher.callback(this.name, msg));

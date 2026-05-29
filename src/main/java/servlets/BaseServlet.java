@@ -6,22 +6,17 @@ import java.nio.charset.StandardCharsets;
 import java.util.Map;
 
 /**
- * Abstract base class for all Servlet implementations.
- * Centralizes HTTP response writing so subclasses only need to contain
- * internal logic.
+ * Shared HTTP response helpers so concrete servlets only contain
+ * business logic.
  */
 public abstract class BaseServlet implements Servlet {
 
-    /**
-     * Sends a plain HTML response with the given status code.
-     */
+    /** HTML response with the given status code. */
     protected void sendResponse(OutputStream out, int statusCode, String body) throws IOException {
         sendRaw(out, statusCode, "text/html", body);
     }
 
-    /**
-     * Sends a JSON response with the given status code.
-     */
+    /** JSON response with status 200. */
     protected void sendJsonResponse(OutputStream out, String body) throws IOException {
         sendRaw(out, 200, "application/json", body);
     }

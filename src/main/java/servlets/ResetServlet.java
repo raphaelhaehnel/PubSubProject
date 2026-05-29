@@ -1,5 +1,6 @@
 package servlets;
 
+import graph.Agent;
 import graph.Message;
 import graph.Topic;
 import graph.TopicManagerSingleton;
@@ -7,39 +8,47 @@ import server.RequestParser;
 
 import java.io.IOException;
 import java.io.OutputStream;
+import java.util.HashSet;
+import java.util.Set;
 
 /**
- * GET /publish?topic=...&message=... : publishes the message on the
- * given topic and returns a JSON snapshot of every topic's latest value.
+ * POST /reset : calls reset() on every agent then publishes "0" on every
+ * topic, so the whole system goes back to a clean zeroed state.
+ * Returns the same JSON snapshot as {@link TopicDisplayer}.
  */
-public class TopicDisplayer extends BaseServlet {
+public class ResetServlet extends BaseServlet {
 
     @Override
     public void handle(RequestParser.RequestInfo ri, OutputStream toClient) throws IOException {
         try {
-            String topicName   = ri.getParameters().get("topic");
-            String messageText = ri.getParameters().get("message");
+            TopicManagerSingleton.TopicManager topicManager = TopicManagerSingleton.get();
 
-            if (topicName == null || messageText == null) {
-                sendResponse(toClient, 400,
-                        "<html><body>Missing topic or message</body></html>");
-                return;
+            // An agent can appear on several topics, so we deduplicate
+            // before calling reset().
+            Set<Agent> allAgents = new HashSet<>();
+            for (Topic t : topicManager.getTopics()) {
+                allAgents.addAll(t.getSubscribers());
+                allAgents.addAll(t.getPublishers());
             }
 
-            TopicManagerSingleton.TopicManager topicManager = TopicManagerSingleton.get();
-            Topic topic = topicManager.getTopic(topicName);
+            for (Agent a : allAgents) {
+                a.reset();
+            }
 
-            topic.publish(new Message(messageText));
+            Message zero = new Message("0");
+            for (Topic t : topicManager.getTopics()) {
+                t.publish(zero);
+            }
 
             sendJsonResponse(toClient, buildTopicsJson(topicManager));
 
         } catch (Exception e) {
             e.printStackTrace();
-            sendResponse(toClient, 500, "<html><body>Server error</body></html>");
+            sendResponse(toClient, 500, "<html><body>Server error during reset</body></html>");
         }
     }
 
-    /** Builds {"topics":[{"name":..., "value":...}, ...]}. */
+    /** Same shape as {@link TopicDisplayer#buildTopicsJson}. */
     private String buildTopicsJson(TopicManagerSingleton.TopicManager topicManager) {
         StringBuilder json = new StringBuilder("{\"topics\":[");
         boolean first = true;

@@ -7,6 +7,14 @@ import graph.Node;
 import java.util.HashMap;
 import java.util.Map;
 
+/**
+ * Serializes a {@link Graph} to the JSON format expected by Vis.js:
+ * <pre>
+ * { "nodes": [ { "id": 1, "label": "TA\n(5.0)", "color": "lightblue" }, ... ],
+ *   "edges": [ { "from": 1, "to": 2 }, ... ] }
+ * </pre>
+ * Topic nodes (name starts with "T") are blue, agent nodes ("A") green.
+ */
 public class HtmlGraphWriter {
 
     public static String getGraphJSON(Graph graph) {
@@ -14,6 +22,7 @@ public class HtmlGraphWriter {
 
         json.append("{\"nodes\":[");
 
+        // Vis.js needs numeric ids - we assign one per node as we discover it.
         Map<String, Integer> nodeIds = new HashMap<>();
         int id = 1;
         boolean first = true;
