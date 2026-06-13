@@ -3,6 +3,9 @@ package graph;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 
+import graph.agents.Agent;
+import graph.agents.ParallelAgent;
+
 import java.io.File;
 import java.io.IOException;
 import java.lang.reflect.Constructor;
@@ -10,24 +13,14 @@ import java.util.ArrayList;
 import java.util.List;
 
 /**
- * Builds agents from a JSON configuration file of the form:
- * <pre>
- * {
- *   "agents": [
- *     { "type": "PlusAgent", "subs": ["A", "B"], "pubs": ["C"] },
- *     { "type": "IncAgent",  "subs": ["C"],      "pubs": ["D"] }
- *   ]
- * }
- * </pre>
- * "type" must name a class in the graph package with a
- * <code>(String[] subs, String[] pubs)</code> constructor; it is loaded
- * by reflection so adding a new agent does not require changing this class.
- * Every agent is wrapped in a {@link ParallelAgent} so its callback runs
+ * Builds agents from a JSON configuration file.
+ * Now truly generic: expects the Fully Qualified Class Name (FQCN) in the "type" field
+ * (e.g., "graph.agents.IncAgent"), but includes a legacy fallback for simple names.
+ * * Every agent is wrapped in a {@link ParallelAgent} so its callback runs
  * on its own thread.
  */
 public class GenericConfig implements Config {
 
-    private static final String AGENT_PACKAGE = "graph.";
     private static final ObjectMapper MAPPER = new ObjectMapper();
 
     private String configPath;
@@ -68,15 +61,29 @@ public class GenericConfig implements Config {
 
             String[] subs = readTopicArray(entry, "subs");
             String[] pubs = readTopicArray(entry, "pubs");
-            String fullClassName = AGENT_PACKAGE + typeName;
+            
+            Class<?> agentClass = null;
+            
+            try {
+                // Attempt 1: True Generic (e.g., "graph.agents.IncAgent" or "com.custom.MyAgent")
+                agentClass = Class.forName(typeName);
+                
+            } catch (ClassNotFoundException e) {
+                // Attempt 2: Legacy Fallback (If JSON just says "IncAgent")
+                try {
+                    agentClass = Class.forName("graph.agents." + typeName);
+                } catch (ClassNotFoundException ex) {
+                    System.err.println("CRITICAL: Could not locate agent class for type: " + typeName);
+                    continue; // Skip this agent and move to the next one
+                }
+            }
 
             try {
-                Class<?> agentClass = Class.forName(fullClassName);
                 Constructor<?> constructor = agentClass.getConstructor(String[].class, String[].class);
                 Agent agent = (Agent) constructor.newInstance((Object) subs, (Object) pubs);
                 instantiatedAgents.add(new ParallelAgent(agent, 10));
             } catch (Exception e) {
-                System.err.println("Could not load agent: " + fullClassName);
+                System.err.println("Failed to instantiate agent: " + (agentClass != null ? agentClass.getName() : typeName));
                 e.printStackTrace();
             }
         }

@@ -1,4 +1,4 @@
-package graph;
+package graph.agents;
 
 /**
  * Publishes the product of all input topics on pubs[0].

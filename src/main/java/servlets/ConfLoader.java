@@ -2,15 +2,18 @@ package servlets;
 
 import graph.GenericConfig;
 import graph.Graph;
-import server.RequestParser;
+import server.dtos.HTTPRequest;
+import server.dtos.HTTPResponse;
+import server.enums.HTTPStatus;
+import server.exceptions.HTTPException;
 import view.HtmlGraphWriter;
 
-import java.io.IOException;
-import java.io.OutputStream;
 import java.net.URLDecoder;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
+import java.nio.file.Path;
 import java.nio.file.Paths;
+import java.io.IOException;
 
 /**
  * POST /upload : accepts a JSON configuration in the "config" form
@@ -23,35 +26,52 @@ public class ConfLoader extends BaseServlet {
     private static final String TEMP_FILE = "uploaded_config.json";
 
     @Override
-    public void handle(RequestParser.RequestInfo ri, OutputStream toClient) throws IOException {
+    public HTTPResponse handle(HTTPRequest request) throws HTTPException {
+        String configText = request.getParameters().get("config");
+
+        if (configText == null || configText.isEmpty()) {
+            throw new HTTPException(HTTPStatus.BAD_REQUEST, "No config provided");
+        }
+
+        String decodedText = URLDecoder.decode(configText, StandardCharsets.UTF_8);
+        Path tempFilePath = null;
+
         try {
-            String configText = ri.getParameters().get("config");
-
-            if (configText == null || configText.isEmpty()) {
-                sendResponse(toClient, 400, "<html><body>No config provided</body></html>");
-                return;
-            }
-
-            String decodedText = URLDecoder.decode(configText, StandardCharsets.UTF_8);
-            Files.writeString(Paths.get(TEMP_FILE), decodedText);
+            // Create a completely unique temp file for this specific request
+            tempFilePath = Files.createTempFile("graph_config_", ".txt");
+            Files.writeString(tempFilePath, decodedText);
 
             GenericConfig config = new GenericConfig();
-            config.setConfFile(TEMP_FILE);
+            // Pass the unique file path to your config object
+            config.setConfFile(tempFilePath.toString()); 
             config.create();
 
             Graph graph = new Graph();
             graph.createFromTopics();
 
             if (graph.hasCycles()) {
-                throw new RuntimeException(
-                        "The current configuration has cycles. Please provide a graph without cycles.");
+                throw new HTTPException(
+                    HTTPStatus.BAD_REQUEST, 
+                    "The current configuration has cycles. Please provide a graph without cycles."
+                );
             }
 
-            sendJsonResponse(toClient, HtmlGraphWriter.getGraphJSON(graph));
+            // Using the overloaded helper we built in BaseServlet!
+            return sendJsonResponse(HtmlGraphWriter.getGraphJSON(graph));
 
-        } catch (Exception e) {
-            e.printStackTrace();
-            sendResponse(toClient, 500, "<html><body>Error processing config</body></html>");
+        } catch (IOException e) {
+            // Catch disk errors and chain them into an HTTP 500
+            throw new HTTPException(HTTPStatus.INTERNAL_SERVER_ERROR, "Failed to process configuration file", e);
+            
+        } finally {
+            // ALWAYS delete temp files so the server's hard drive doesn't fill up
+            if (tempFilePath != null) {
+                try {
+                    Files.deleteIfExists(tempFilePath);
+                } catch (IOException ignored) {
+                    // Safe to ignore during cleanup
+                }
+            }
         }
     }
 

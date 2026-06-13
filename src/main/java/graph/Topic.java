@@ -3,6 +3,8 @@ package graph;
 import java.util.List;
 import java.util.concurrent.CopyOnWriteArrayList;
 
+import graph.agents.Agent;
+
 /**
  * One channel of the pub-sub system: agents subscribe to receive its
  * messages, others register as publishers.

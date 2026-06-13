@@ -1,15 +1,15 @@
 package servlets;
 
 import java.io.IOException;
-import java.io.OutputStream;
 
-import server.RequestParser.RequestInfo;
+import server.dtos.HTTPRequest;
+import server.dtos.HTTPResponse;
+import server.exceptions.HTTPException;
 
 /**
- * Handles one HTTP endpoint. Implementations write the full HTTP
- * response (status line + headers + body) to {@code toClient}.
+ * Handles one HTTP endpoint. Implementations return an internal HTTPResponse object.
  */
 public interface Servlet {
-    void handle(RequestInfo ri, OutputStream toClient) throws IOException;
+    HTTPResponse handle(HTTPRequest request) throws HTTPException;
     void close() throws IOException;
 }

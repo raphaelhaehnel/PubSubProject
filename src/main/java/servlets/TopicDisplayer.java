@@ -3,10 +3,11 @@ package servlets;
 import graph.Message;
 import graph.Topic;
 import graph.TopicManagerSingleton;
-import server.RequestParser;
+import server.dtos.HTTPRequest;
+import server.dtos.HTTPResponse;
+import server.enums.HTTPStatus;
+import server.exceptions.HTTPException;
 
-import java.io.IOException;
-import java.io.OutputStream;
 
 /**
  * GET /publish?topic=...&message=... : publishes the message on the
@@ -15,28 +16,20 @@ import java.io.OutputStream;
 public class TopicDisplayer extends BaseServlet {
 
     @Override
-    public void handle(RequestParser.RequestInfo ri, OutputStream toClient) throws IOException {
-        try {
-            String topicName   = ri.getParameters().get("topic");
-            String messageText = ri.getParameters().get("message");
+    public HTTPResponse handle(HTTPRequest request) throws HTTPException {
+        String topicName   = request.getParameters().get("topic");
+        String messageText = request.getParameters().get("message");
 
-            if (topicName == null || messageText == null) {
-                sendResponse(toClient, 400,
-                        "<html><body>Missing topic or message</body></html>");
-                return;
-            }
-
-            TopicManagerSingleton.TopicManager topicManager = TopicManagerSingleton.get();
-            Topic topic = topicManager.getTopic(topicName);
-
-            topic.publish(new Message(messageText));
-
-            sendJsonResponse(toClient, buildTopicsJson(topicManager));
-
-        } catch (Exception e) {
-            e.printStackTrace();
-            sendResponse(toClient, 500, "<html><body>Server error</body></html>");
+        if (topicName == null || messageText == null) {
+            throw new HTTPException(HTTPStatus.BAD_REQUEST, "Missing topic or message");
         }
+
+        TopicManagerSingleton.TopicManager topicManager = TopicManagerSingleton.get();
+        Topic topic = topicManager.getTopic(topicName);
+
+        topic.publish(new Message(messageText));
+
+        return sendJsonResponse(buildTopicsJson(topicManager));
     }
 
     /** Builds {"topics":[{"name":..., "value":...}, ...]}. */

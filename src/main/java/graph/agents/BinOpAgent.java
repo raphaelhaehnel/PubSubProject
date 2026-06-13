@@ -1,6 +1,10 @@
-package graph;
+package graph.agents;
 
 import java.util.function.BinaryOperator;
+
+import graph.Message;
+import graph.Topic;
+import graph.TopicManagerSingleton;
 
 /**
  * Generic two-input agent that applies a {@link BinaryOperator} on the

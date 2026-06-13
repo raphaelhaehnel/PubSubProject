@@ -1,14 +1,15 @@
 package servlets;
 
-import server.RequestParser;
+import server.dtos.HTTPRequest;
+import server.dtos.HTTPResponse;
+import server.enums.ContentType;
+import server.enums.HTTPStatus;
+import server.exceptions.HTTPException;
 
 import java.io.IOException;
-import java.io.OutputStream;
-import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
-import java.util.Map;
 
 /**
  * GET /app/... : serves static files from the configured base directory.
@@ -16,67 +17,50 @@ import java.util.Map;
  */
 public class HtmlLoader extends BaseServlet {
 
-    private static final Map<String, String> CONTENT_TYPES = Map.of(
-            ".html", "text/html",
-            ".css",  "text/css",
-            ".js",   "application/javascript",
-            ".svg",  "image/svg+xml",
-            ".json", "application/json",
-            ".png",  "image/png"
-    );
-
     private final String baseDir;
 
     public HtmlLoader(String baseDir) {
         this.baseDir = baseDir;
     }
 
-    @Override
-    public void handle(RequestParser.RequestInfo ri, OutputStream toClient) throws IOException {
+@Override
+    public HTTPResponse handle(HTTPRequest request) throws HTTPException {
+        String uri = request.getResourceUri(); 
+        String fileName = uri.replaceFirst("^/app/?", "");
+
+        if (fileName.isEmpty() || fileName.equals("/")) {
+            fileName = "index.html";
+        }
+
+        String fullPath = baseDir + "/" + fileName;
+        Path path = Paths.get(fullPath);
+        
+        if (!Files.exists(path)) {
+            throw new HTTPException(HTTPStatus.NOT_FOUND, "File not found");
+        }
+
+        // --- The Fix: Wrap the dangerous file system call in a try/catch ---
         try {
-            String uri = ri.getResourceUri(); // Use getResourceUri to ignore query parameters
-            String fileName = uri.replaceFirst("^/app/?", "");
-
-            if (fileName.isEmpty() || fileName.equals("/")) {
-                fileName = "index.html";
-            }
-
-            String fullPath = baseDir + "/" + fileName;
-
-            Path path = Paths.get(fullPath);
-            if (!Files.exists(path)) {
-                sendResponse(toClient, 404,
-                        "<html><body><h3>404 - File not found</h3></body></html>");
-                return;
-            }
-
             byte[] content = Files.readAllBytes(path);
             String contentType = getContentType(fileName);
-
-            String header =
-                    "HTTP/1.1 200 OK\r\n" +
-                            "Content-Type: " + contentType + "; charset=UTF-8\r\n" +
-                            "Content-Length: " + content.length + "\r\n" +
-                            "\r\n";
-
-            toClient.write(header.getBytes(StandardCharsets.UTF_8));
-            toClient.write(content);
-            toClient.flush();
-
-        } catch (Exception e) {
-            e.printStackTrace();
-            sendResponse(toClient, 500,
-                    "<html><body><h3>500 - Server Error</h3></body></html>");
+            return new HTTPResponse(HTTPStatus.OK, contentType, content);
+            
+        } catch (IOException e) {
+            // Catch the low-level Java error and throw your custom HTTP domain error.
+            // Passing 'e' as the third parameter chains them together for debugging!
+            throw new HTTPException(HTTPStatus.INTERNAL_SERVER_ERROR, "Failed to read file: " + fileName, e);
         }
     }
 
-    /** Picks a MIME type by file extension; defaults to text/plain. */
+    /** Picks a MIME type by file extension. Defaults to JSON. */
     private String getContentType(String fileName) {
-        return CONTENT_TYPES.entrySet().stream()
-                .filter(e -> fileName.endsWith(e.getKey()))
-                .map(Map.Entry::getValue)
-                .findFirst()
-                .orElse("text/plain");
+        if (fileName == null || !fileName.contains(".")) {
+            return ContentType.JSON.mimeType();
+        }
+
+        String extension = fileName.substring(fileName.lastIndexOf("."));
+
+        return ContentType.getMimeTypeForExtension(extension);
     }
 
     @Override

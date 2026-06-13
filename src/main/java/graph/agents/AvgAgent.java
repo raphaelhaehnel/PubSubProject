@@ -1,4 +1,4 @@
-package graph;
+package graph.agents;
 
 /**
  * Publishes the average of all input topics on pubs[0].

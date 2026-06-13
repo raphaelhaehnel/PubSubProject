@@ -303,6 +303,16 @@ at <http://localhost:8080/app>.
 
 ---
 
+## Internal Representation of HTTP Entities
+
+To support robust error handling and ensure predictable API outputs, the web server uses Data Transfer Objects (DTOs) for its data lifecycle:
+
+1. **`server.dto.HTTPRequest`**: The `RequestParser` parses the raw `Socket` InputStream into this strongly-typed object, encapsulating the URL, segments, parameters, and payloads.
+2. **`server.dto.HTTPResponse`**: Servlets do not interact with `OutputStream`s directly. Instead, they process an `HTTPRequest` and return an `HTTPResponse` DTO containing the status code, headers, and body.
+3. **`server.exceptions.HTTPException`**: Servlets throw this exception to gracefully bubble up status codes (like `404` or `400`). The core `MyHTTPServer` intercepts these exceptions and guarantees a properly formatted `application/json` error response is safely written back to the client.
+
+---
+
 ## Project Layout
 
 ```
@@ -327,7 +337,12 @@ src/main/java/
 ├── server/                    # The HTTP server
 │   ├── HTTPServer.java
 │   ├── MyHTTPServer.java
-│   └── RequestParser.java
+│   ├── RequestParser.java
+│   ├── dto/
+│   │   ├── HTTPRequest.java   # Internal request state DTO
+│   │   └── HTTPResponse.java  # Internal response generation DTO
+│   └── exceptions/
+│       └── HTTPException.java # Safely bubbled HTTP error codes
 ├── servlets/                  # One servlet per endpoint
 │   ├── BaseServlet.java
 │   ├── ConfLoader.java        # POST /upload
@@ -339,12 +354,13 @@ src/main/java/
 └── view/
     └── HtmlGraphWriter.java   # Graph -> JSON for the frontend
 
-web/                           # Static frontend (HTML / CSS / JS)
-├── api.js
-├── graph.js
-├── index.html
-├── styles.css
-└── topics.js
+web/                           # Modern React frontend
+├── App.jsx                    # Main React component & UI logic
+├── main.jsx                   # React entry point
+├── index.html                 # Vite HTML template
+├── package.json               # Node dependencies and build scripts
+├── vite.config.js             # Vite bundler configuration
+└── dist/                      # Compiled frontend (generated after npm run build)
 ```
 
 ---
