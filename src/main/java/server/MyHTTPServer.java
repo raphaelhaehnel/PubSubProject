@@ -81,7 +81,7 @@ public class MyHTTPServer extends Thread implements HTTPServer {
             // MyHTTPServer extends Thread; super.start() runs run() on a
             // background thread so this method can return immediately.
             super.start();
-            logger.log(Level.INFO, "MyHTTPServer started on port {0} with {1} threads.", new Object[]{port, nThreads});
+            logger.log(Level.INFO, "MyHTTPServer started on port {0} with {1} threads.", new Object[]{String.valueOf(port), String.valueOf(nThreads)});
         } else {
             logger.log(Level.WARNING, "Server start() called when already running.");
         }
@@ -90,7 +90,7 @@ public class MyHTTPServer extends Thread implements HTTPServer {
     @Override
     public void run() {
         try (ServerSocket ss = createServerSocket()) {
-            logger.log(Level.INFO, "Server socket listening on port {0}", port);
+            logger.log(Level.INFO, "Server socket listening on port {0}", String.valueOf(port));
             acceptClientConnections(ss);
         } catch (IOException e) {
             if (running) {

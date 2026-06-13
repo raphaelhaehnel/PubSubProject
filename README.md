@@ -47,6 +47,7 @@ visualize and interact with in the browser.
 
 - Java 17 or higher
 - Maven (for dependency management; only `jackson-databind` is used)
+- Node.js and npm (to build the React frontend)
 - A web browser (Chrome recommended)
 - An internet connection (the Vis.js library used by the frontend is
   loaded from an external server)
@@ -55,9 +56,27 @@ visualize and interact with in the browser.
 
 ## How to Run
 
-1. Open the project in IntelliJ (or any IDE that supports Maven).
+### 1. Build the Web UI
+
+Before starting the Java server, you must compile the React frontend:
+
+1. Open a terminal and navigate to the `web` directory.
+2. Run `npm install` to install the frontend dependencies.
+3. Run `npm run build` to compile the app. This generates the `dist` folder inside `web` that the Java server uses.
+
+### 2. Run the Java Server (IntelliJ IDEA)
+
+1. Open the project in IntelliJ.
 2. Let Maven download the dependencies (`jackson-databind`).
 3. Run `Main.java`.
+4. Open a browser at <http://localhost:8080/app>.
+5. Press **Enter** in the terminal where the server is running to stop it.
+
+### 3. Run the Java Server (Visual Studio Code)
+
+1. Open the project folder in VS Code (ensure you have the **Extension Pack for Java** installed).
+2. Let the Java extension sync the project and download Maven dependencies (`jackson-databind`).
+3. Open `src/main/java/Main.java` and click the **Run** button (code lens) above the `main` method, or press `F5`.
 4. Open a browser at <http://localhost:8080/app>.
 5. Press **Enter** in the terminal where the server is running to stop it.
 
@@ -73,9 +92,13 @@ The main page is split into three columns:
 
 ### 1. Deploy a configuration
 
-Drop a `.json` file into the **"Drop your `.json` config here"** zone
-(or click "Upload manually") and press **Deploy**. The graph in the
-center will update automatically.
+You can deploy a graph configuration using two different modes:
+- **File Mode:** Drop a `.json` file into the **"Drop your `.json` config here"** zone (or click to select one).
+- **Snippet Mode:** Switch to the **Snippet** tab and paste or type your raw JSON configuration directly into the text area.
+
+Once a file is selected or a snippet is entered, press the green **Deploy Graph** button to update the graph. The button will be disabled if the current configuration is already deployed.
+
+You can also use the yellow **Clear Graph** button to completely remove all nodes and start with a blank canvas.
 
 ### 2. Publish a message
 

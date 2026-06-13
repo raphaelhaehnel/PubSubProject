@@ -19,7 +19,10 @@ public class HtmlLoader extends BaseServlet {
     private static final Map<String, String> CONTENT_TYPES = Map.of(
             ".html", "text/html",
             ".css",  "text/css",
-            ".js",   "application/javascript"
+            ".js",   "application/javascript",
+            ".svg",  "image/svg+xml",
+            ".json", "application/json",
+            ".png",  "image/png"
     );
 
     private final String baseDir;
@@ -31,10 +34,10 @@ public class HtmlLoader extends BaseServlet {
     @Override
     public void handle(RequestParser.RequestInfo ri, OutputStream toClient) throws IOException {
         try {
-            String uri = ri.getUri();
-            String fileName = uri.replaceFirst("/app?", "");
+            String uri = ri.getResourceUri(); // Use getResourceUri to ignore query parameters
+            String fileName = uri.replaceFirst("^/app/?", "");
 
-            if (fileName.isEmpty()) {
+            if (fileName.isEmpty() || fileName.equals("/")) {
                 fileName = "index.html";
             }
 

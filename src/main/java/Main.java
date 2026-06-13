@@ -26,7 +26,7 @@ public class Main {
         server.addServlet("POST", "/upload", new ConfLoader());
         server.addServlet("GET", "/graph", new GraphDisplayer());
         server.addServlet("POST", "/reset", new ResetServlet());
-        server.addServlet("GET", "/app", new HtmlLoader("web"));
+        server.addServlet("GET", "/app", new HtmlLoader("web/dist"));
 
         server.start();
 
