@@ -1,7 +1,7 @@
 ## Pub-Sub Project
 
 This project was done during the course **"Advanced Programming"** with
-Prof. Eliahu Khalastchi, Bar-Ilan University, 2026, first semester.
+Prof. Eliahu Khalastchi, Bar-Ilan University, 2026, second semester.
 
 It implements a full server with a backend implementing a computational
 graph, an HTTP API, and a web frontend.
@@ -12,7 +12,7 @@ to these topics to automatically get new published messages. The agents
 that perform the computations form a directed graph that the user can
 visualize and interact with in the browser.
 
-<img width="1919" height="913" alt="app-screenshot" src="https://github.com/user-attachments/assets/642991b4-ca59-45fe-84e1-25f075c455c3" />
+<img width="1919" height="913" alt="app-screenshot" src="src/main/resources/app-screenshot.png" />
 
 ---
 
