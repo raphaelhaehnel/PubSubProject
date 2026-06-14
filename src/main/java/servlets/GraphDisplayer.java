@@ -3,9 +3,9 @@ package servlets;
 import graph.Graph;
 import server.dtos.HTTPRequest;
 import server.dtos.HTTPResponse;
+import server.enums.HTTPStatus;
 import server.exceptions.HTTPException;
 import view.HtmlGraphWriter;
-
 
 /**
  * GET /graph : returns the current graph (topics + agents + edges +
@@ -15,9 +15,31 @@ public class GraphDisplayer extends BaseServlet {
 
     @Override
     public HTTPResponse handle(HTTPRequest request) throws HTTPException {
-        Graph graph = new Graph();
-        graph.createFromTopics();
-        return sendJsonResponse(HtmlGraphWriter.getGraphJSON(graph));
+        try {
+            Graph graph = new Graph();
+            graph.createFromTopics();
+            
+            // Safety check: Ensure the current state of the graph is actually valid
+            if (graph.hasCycles()) {
+                throw new HTTPException(
+                    HTTPStatus.INTERNAL_SERVER_ERROR, 
+                    "Invalid graph state detected: The current topic configuration contains cycles."
+                );
+            }
+
+            return sendJsonResponse(HtmlGraphWriter.getGraphJSON(graph));
+            
+        } catch (HTTPException e) {
+            // Rethrow HTTP exceptions so we don't double-wrap our own cycle error
+            throw e; 
+        } catch (Exception e) {
+            // Wrap any unexpected runtime errors (like JSON parsing issues) into our API boundary
+            throw new HTTPException(
+                HTTPStatus.INTERNAL_SERVER_ERROR, 
+                "An unexpected error occurred while generating the graph data.", 
+                e
+            );
+        }
     }
 
     @Override
