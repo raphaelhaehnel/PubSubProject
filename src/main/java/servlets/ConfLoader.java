@@ -6,7 +6,7 @@ import server.dtos.HTTPRequest;
 import server.dtos.HTTPResponse;
 import server.enums.HTTPStatus;
 import server.exceptions.HTTPException;
-import view.HtmlGraphWriter;
+import view.JsonGraphWriter;
 
 import java.net.URLDecoder;
 import java.nio.charset.StandardCharsets;
@@ -57,7 +57,7 @@ public class ConfLoader extends BaseServlet {
             }
 
             // Using the overloaded helper we built in BaseServlet!
-            return sendJsonResponse(HtmlGraphWriter.getGraphJSON(graph));
+            return sendJsonResponse(JsonGraphWriter.getGraphJSON(graph));
 
         } catch (IOException e) {
             // Catch disk errors and chain them into an HTTP 500

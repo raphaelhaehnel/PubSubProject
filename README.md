@@ -48,6 +48,17 @@ Or, if using an IDE like **IntelliJ IDEA** or **VS Code**, you can navigate to t
 
 ---
 
+## Architectural Notes (Deviations from Base Spec)
+
+With permission, this project elevates the base requirements to meet modern industry standards, specifically transitioning from an older Server-Side Rendering (SSR) architecture to a decoupled RESTful API and Single Page Application (SPA):
+
+- **Modern Web UI (React vs. iFrames):** Instead of using 3 static `iframe` tags, the frontend is built as a unified React application (`web` directory). It provides a seamless, dynamic user experience without full-page reloads, utilizing `vis-network`'s advanced repulsion physics for clean graph rendering.
+- **RESTful JSON API vs. HTML Servlets:** To ensure strict Client-Server decoupling, the `TopicDisplayer` and `ConfLoader` servlets return `application/json` DTOs rather than rendering raw HTML strings. 
+- **View Layer (`JsonGraphWriter`):** The requirement for an `HtmlGraphWriter` in the `view` package was honored conceptually. The view layer abstracts the visual representation of the `Graph` object, but it translates the graph state into a structured JSON visualization payload for the React client rather than legacy HTML.
+- **Static Resource Serving:** The server includes a dedicated `StaticResourceServlet` mapped to `/app/` that securely serves the compiled React assets (JS, CSS, HTML) while strictly preventing directory traversal attacks.
+
+---
+
 ## Requirements
 
 - Java 17 or higher
@@ -171,8 +182,8 @@ Resets every agent's internal state and publishes `"0"` on every topic.
 curl -X POST http://localhost:8080/reset
 ```
 
-### `GET /app`
-Serves the static front-end (HTML / CSS / JS).
+### `GET /app/`
+Serves the static React front-end and its compiled assets (HTML / CSS / JS).
 
 ---
 

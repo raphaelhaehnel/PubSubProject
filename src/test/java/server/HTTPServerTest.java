@@ -7,6 +7,7 @@ import org.mockito.Mockito;
 import server.dtos.HTTPRequest;
 import server.dtos.HTTPResponse;
 import server.enums.HTTPStatus;
+import server.exceptions.HTTPException;
 import servlets.Servlet;
 
 import java.io.IOException;
@@ -23,15 +24,19 @@ class HTTPServerTest {
     private static final int TEST_PORT = 8081;
 
     @BeforeEach
-    void setUp() {
+    void setUp() throws Exception {
         // Initialize server with 2 threads for testing
         server = new MyHTTPServer(TEST_PORT, 2);
         server.start();
+        // Making sure server is fully loaded before tests
+        Thread.sleep(1000);
     }
 
     @AfterEach
-    void tearDown() {
+    void tearDown() throws Exception {
         server.close();
+        // Making sure server closing completes
+        Thread.sleep(1000);
     }
 
     @Test
@@ -89,5 +94,54 @@ class HTTPServerTest {
         HttpURLConnection conn2 = (HttpURLConnection) url.openConnection();
         assertEquals(404, conn2.getResponseCode(), "Server should return 404 after servlet is removed.");
         conn2.disconnect();
+    }
+
+    @Test
+    void testServerHandlesBadRequest400() throws Exception {
+        Servlet mockServlet = Mockito.mock(Servlet.class);
+        when(mockServlet.handle(any(HTTPRequest.class)))
+                .thenThrow(new HTTPException(HTTPStatus.BAD_REQUEST, "Missing parameter"));
+
+        server.addServlet("GET", "/test-400", mockServlet);
+
+        URL url = new URL("http://localhost:" + TEST_PORT + "/test-400");
+        HttpURLConnection conn = (HttpURLConnection) url.openConnection();
+        conn.setRequestMethod("GET");
+
+        assertEquals(400, conn.getResponseCode(), "Server should translate HTTPException(400) to 400 BAD REQUEST");
+        conn.disconnect();
+    }
+
+    @Test
+    void testServerHandlesForbidden403() throws Exception {
+        Servlet mockServlet = Mockito.mock(Servlet.class);
+        when(mockServlet.handle(any(HTTPRequest.class)))
+                .thenThrow(new HTTPException(HTTPStatus.FORBIDDEN, "Access Denied"));
+
+        server.addServlet("GET", "/test-403", mockServlet);
+
+        URL url = new URL("http://localhost:" + TEST_PORT + "/test-403");
+        HttpURLConnection conn = (HttpURLConnection) url.openConnection();
+        conn.setRequestMethod("GET");
+
+        assertEquals(403, conn.getResponseCode(), "Server should translate HTTPException(403) to 403 FORBIDDEN");
+        conn.disconnect();
+    }
+
+    @Test
+    void testServerHandlesInternalServerError500() throws Exception {
+        Servlet mockServlet = Mockito.mock(Servlet.class);
+        // Throwing a generic RuntimeException to test the server's fallback error handling
+        when(mockServlet.handle(any(HTTPRequest.class)))
+                .thenThrow(new RuntimeException("Unexpected system failure"));
+
+        server.addServlet("GET", "/test-500", mockServlet);
+
+        URL url = new URL("http://localhost:" + TEST_PORT + "/test-500");
+        HttpURLConnection conn = (HttpURLConnection) url.openConnection();
+        conn.setRequestMethod("GET");
+
+        assertEquals(500, conn.getResponseCode(), "Server should catch unhandled exceptions and return 500 INTERNAL SERVER ERROR");
+        conn.disconnect();
     }
 }

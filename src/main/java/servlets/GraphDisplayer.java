@@ -5,7 +5,7 @@ import server.dtos.HTTPRequest;
 import server.dtos.HTTPResponse;
 import server.enums.HTTPStatus;
 import server.exceptions.HTTPException;
-import view.HtmlGraphWriter;
+import view.JsonGraphWriter;
 
 /**
  * GET /graph : returns the current graph (topics + agents + edges +
@@ -27,7 +27,7 @@ public class GraphDisplayer extends BaseServlet {
                 );
             }
 
-            return sendJsonResponse(HtmlGraphWriter.getGraphJSON(graph));
+            return sendJsonResponse(JsonGraphWriter.getGraphJSON(graph));
             
         } catch (HTTPException e) {
             // Rethrow HTTP exceptions so we don't double-wrap our own cycle error

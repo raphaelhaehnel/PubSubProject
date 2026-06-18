@@ -24,7 +24,7 @@ class RequestParserTest {
         assertEquals("GET", request.getHttpCommand());
         assertEquals("/api/data?id=123&name=test", request.getUri());
         assertEquals("/api/data", request.getResourceUri());
-        assertArrayEquals(new String[]{"api", "data"}, request.getUriSegments(), "URI segments should be split correctly");
+        assertArrayEquals(new String[]{"api", "data"}, request.getUriSegments());
 
         assertEquals("123", request.getParameters().get("id"));
         assertEquals("test", request.getParameters().get("name"));
@@ -45,7 +45,6 @@ class RequestParserTest {
         assertEquals("POST", request.getHttpCommand());
         assertEquals("/submit", request.getResourceUri());
 
-        // Body parameters should be merged seamlessly into the parameters map
         assertEquals("value1", request.getParameters().get("key1"));
         assertEquals("value2", request.getParameters().get("key2"));
         assertArrayEquals(body.getBytes(java.nio.charset.StandardCharsets.UTF_8), request.getContent());
@@ -70,5 +69,24 @@ class RequestParserTest {
 
         IOException exception = assertThrows(IOException.class, () -> RequestParser.parseRequest(reader));
         assertTrue(exception.getMessage().contains("Invalid Content-Length"));
+    }
+
+    @Test
+    void testParsePostRequestWithoutContentLengthIgnoresBody() throws IOException {
+        String rawRequest = "POST /submit HTTP/1.1\r\n" +
+                            "Host: localhost:8080\r\n" +
+                            "User-Agent: curl/7.68.0\r\n" +
+                            "\r\n" + 
+                            "this body should be ignored";
+
+        BufferedReader reader = new BufferedReader(new StringReader(rawRequest));
+        HTTPRequest request = RequestParser.parseRequest(reader);
+
+        assertEquals("POST", request.getHttpCommand());
+        assertEquals("/submit", request.getResourceUri());
+        
+        // Ensure parser does not hang and body is ignored when Content-Length is missing
+        assertTrue(request.getContent() == null || request.getContent().length == 0);
+        assertTrue(request.getParameters().isEmpty());
     }
 }

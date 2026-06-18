@@ -15,15 +15,15 @@ import java.nio.file.Paths;
  * GET /app/... : serves static files from the configured base directory.
  * A bare "/app" request is mapped to "index.html".
  */
-public class HtmlLoader extends BaseServlet {
+public class StaticResourceServlet extends BaseServlet {
 
     private final String baseDir;
 
-    public HtmlLoader(String baseDir) {
+    public StaticResourceServlet(String baseDir) {
         this.baseDir = baseDir;
     }
 
-@Override
+    @Override
     public HTTPResponse handle(HTTPRequest request) throws HTTPException {
         String uri = request.getResourceUri(); 
         String fileName = uri.replaceFirst("^/app/?", "");
@@ -32,22 +32,25 @@ public class HtmlLoader extends BaseServlet {
             fileName = "index.html";
         }
 
-        String fullPath = baseDir + "/" + fileName;
-        Path path = Paths.get(fullPath);
-        
-        if (!Files.exists(path)) {
+        Path basePath = Paths.get(baseDir).toAbsolutePath().normalize();
+        Path requestedPath = basePath.resolve(fileName).normalize();
+
+        // Ensure the requested file strictly resides within the allowed base directory
+        if (!requestedPath.startsWith(basePath)) {
+            throw new HTTPException(HTTPStatus.FORBIDDEN, "Access denied: Invalid path");
+        }
+
+        // Check if file exists and is not a directory
+        if (!Files.exists(requestedPath) || !Files.isRegularFile(requestedPath)) {
             throw new HTTPException(HTTPStatus.NOT_FOUND, "File not found");
         }
 
-        // --- The Fix: Wrap the dangerous file system call in a try/catch ---
         try {
-            byte[] content = Files.readAllBytes(path);
+            byte[] content = Files.readAllBytes(requestedPath);
             String contentType = getContentType(fileName);
             return new HTTPResponse(HTTPStatus.OK, contentType, content);
             
         } catch (IOException e) {
-            // Catch the low-level Java error and throw your custom HTTP domain error.
-            // Passing 'e' as the third parameter chains them together for debugging!
             throw new HTTPException(HTTPStatus.INTERNAL_SERVER_ERROR, "Failed to read file: " + fileName, e);
         }
     }
@@ -59,7 +62,6 @@ public class HtmlLoader extends BaseServlet {
         }
 
         String extension = fileName.substring(fileName.lastIndexOf("."));
-
         return ContentType.getMimeTypeForExtension(extension);
     }
 
