@@ -28,10 +28,7 @@ public class GraphDisplayer extends BaseServlet {
             }
 
             return sendJsonResponse(JsonGraphWriter.getGraphJSON(graph));
-            
-        } catch (HTTPException e) {
-            // Rethrow HTTP exceptions so we don't double-wrap our own cycle error
-            throw e; 
+
         } catch (Exception e) {
             // Wrap any unexpected runtime errors (like JSON parsing issues) into our API boundary
             throw new HTTPException(
