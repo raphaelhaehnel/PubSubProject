@@ -12,22 +12,43 @@ The backend implements a **publisher-subscriber** mechanism: publishers can publ
 
 ## Testing & Quality Assurance
 
-We have implemented a comprehensive test suite using **JUnit 5** and **Mockito** to ensure 100% code coverage. Our testing strategy rigorously validates the core logic, thread safety, and end-to-end functionality:
+We have implemented a comprehensive test suite using **JUnit 5/Mockito** for the backend and **Vitest** for the frontend to ensure robust code quality across the entire stack.
+
+### Backend Testing
+Our backend strategy rigorously validates the core logic, thread safety, and end-to-end functionality:
 
 - **Unit Tests:** Individual logic verification for all agents (including edge cases like division-by-zero and NaN handling), message parsing, and configuration loading.
 - **Integration Tests:** Verifying multi-agent graph flows, cycle detection algorithms, and end-to-end HTTP request routing.
 - **Stress & Concurrency Testing:** Simulating high-load multi-threaded environments to ensure the `TopicManager` and `ParallelAgent` executions are completely thread-safe and free of race conditions.
 - **Edge-Case API Testing:** Ensuring the server safely catches bad JSON payloads, handles missing nodes, and correctly translates them into proper HTTP response codes (400, 404, 500).
 
-### How to Run Tests
-
-Ensure you have Maven installed. From the project root directory, run:
-
+**How to run backend tests:**
+From the project root directory, run:
 ```bash
 mvn clean test
 ```
 
 Or, if using an IDE like **IntelliJ IDEA** or **VS Code**, you can navigate to the `src/test/java` directory and run the entire test suite directly through the IDE's built-in Test Runner.
+
+### Frontend Testing
+To ensure the stability of our "Fail-Fast" architecture, we use **Vitest** to unit test the client-side DTOs. This ensures that configuration validation logic is correct before any network request is ever made.
+
+- **DTO Validation Tests:** We specifically target `ConfigDTO` and `AgentDTO` to verify they correctly identify invalid JSON syntax, missing mandatory fields (like `agents`, `subs`, `pubs`), and incorrect data types.
+
+**How to run frontend tests:**
+1. Navigate to the `web` directory:
+   ```bash
+   cd web
+   ```
+2. Install the test dependencies (if not already installed):
+   ```bash
+   npm install -D vitest
+   ```
+3. Run the tests:
+   ```bash
+   npm run test
+   ```
+*Note: Vitest runs in "watch mode" by default. Use `npx vitest run` if you prefer a single-execution run (e.g., for CI/CD pipelines).*
 
 ---
 
