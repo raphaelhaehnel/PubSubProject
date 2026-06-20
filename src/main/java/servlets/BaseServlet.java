@@ -24,7 +24,7 @@ public abstract class BaseServlet implements Servlet {
         return sendResponse(HTTPStatus.OK, body);
     }
 
-    protected HTTPResponse sendJsonResponse(HTTPStatus status, String body) {
+    protected HTTPResponse sendJsonResponse(HTTPStatus status, String body) throws NullPointerException {
         return new HTTPResponse(
             status,
             ContentType.JSON.mimeType(), 

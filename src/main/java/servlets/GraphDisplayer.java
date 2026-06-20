@@ -1,5 +1,6 @@
 package servlets;
 
+import com.fasterxml.jackson.core.JsonProcessingException;
 import graph.Graph;
 import server.dtos.HTTPRequest;
 import server.dtos.HTTPResponse;
@@ -15,28 +16,21 @@ public class GraphDisplayer extends BaseServlet {
 
     @Override
     public HTTPResponse handle(HTTPRequest request) throws HTTPException {
-        try {
-            Graph graph = new Graph();
-            graph.createFromTopics();
-            
-            // Safety check: Ensure the current state of the graph is actually valid
-            if (graph.hasCycles()) {
-                throw new HTTPException(
-                    HTTPStatus.INTERNAL_SERVER_ERROR, 
-                    "Invalid graph state detected: The current topic configuration contains cycles."
-                );
-            }
-
-            return sendJsonResponse(JsonGraphWriter.getGraphJSON(graph));
-
-        } catch (Exception e) {
-            // Wrap any unexpected runtime errors (like JSON parsing issues) into our API boundary
+        Graph graph = new Graph();
+        graph.createFromTopics();
+        
+        // Safety check: Ensure the current state of the graph is valid.
+        if (graph.hasCycles()) {
             throw new HTTPException(
                 HTTPStatus.INTERNAL_SERVER_ERROR, 
-                "An unexpected error occurred while generating the graph data.", 
-                e
+                "Invalid graph state detected: The current topic configuration contains cycles."
             );
         }
+
+        // Generate JSON and return 200 OK.
+        // StandardCharsets.UTF_8 is safe. Any unexpected serialization errors 
+        // will bubble up and be handled by the server's top-level 500 error handler.
+        return sendJsonResponse(JsonGraphWriter.getGraphJSON(graph));
     }
 
     @Override
