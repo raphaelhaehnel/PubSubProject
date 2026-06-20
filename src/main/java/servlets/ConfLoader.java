@@ -2,6 +2,7 @@ package servlets;
 
 import graph.GenericConfig;
 import graph.Graph;
+import graph.TopicManagerSingleton;
 import server.dtos.HTTPRequest;
 import server.dtos.HTTPResponse;
 import server.enums.HTTPStatus;
@@ -12,7 +13,6 @@ import java.net.URLDecoder;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
-import java.nio.file.Paths;
 import java.io.IOException;
 
 /**
@@ -21,9 +21,6 @@ import java.io.IOException;
  * Cyclic configurations are rejected.
  */
 public class ConfLoader extends BaseServlet {
-
-    // GenericConfig reads from a File, so we write the upload to disk first.
-    private static final String TEMP_FILE = "uploaded_config.json";
 
     @Override
     public HTTPResponse handle(HTTPRequest request) throws HTTPException {
@@ -37,46 +34,44 @@ public class ConfLoader extends BaseServlet {
         Path tempFilePath = null;
 
         try {
-            // Create a completely unique temp file for this specific request
-            tempFilePath = Files.createTempFile("graph_config_", ".txt");
+            tempFilePath = Files.createTempFile("graph_config_", ".json");
             Files.writeString(tempFilePath, decodedText);
 
             GenericConfig config = new GenericConfig();
-            // Pass the unique file path to your config object
-            config.setConfFile(tempFilePath.toString()); 
+            config.setConfFile(tempFilePath.toString());
+            // Throws IllegalArgumentException if the JSON is malformed
+            // or if reflection fails (e.g., non-existent agent type)
             config.create();
 
             Graph graph = new Graph();
             graph.createFromTopics();
 
             if (graph.hasCycles()) {
+                // Rollback the corrupted state to prevent memory leaks or deadlocks
+                TopicManagerSingleton.get().clear();
                 throw new HTTPException(
                     HTTPStatus.BAD_REQUEST, 
                     "The current configuration has cycles. Please provide a graph without cycles."
                 );
             }
 
-            // Using the overloaded helper we built in BaseServlet!
             return sendJsonResponse(JsonGraphWriter.getGraphJSON(graph));
 
+        } catch (IllegalArgumentException e) {
+            throw new HTTPException(HTTPStatus.BAD_REQUEST, "Invalid JSON format or schema: " + e.getMessage(), e);
+            
         } catch (IOException e) {
-            // Catch disk errors and chain them into an HTTP 500
             throw new HTTPException(HTTPStatus.INTERNAL_SERVER_ERROR, "Failed to process configuration file", e);
             
         } finally {
-            // ALWAYS delete temp files so the server's hard drive doesn't fill up
             if (tempFilePath != null) {
                 try {
                     Files.deleteIfExists(tempFilePath);
-                } catch (IOException ignored) {
-                    // Safe to ignore during cleanup
-                }
+                } catch (IOException ignored) {}
             }
         }
     }
 
     @Override
-    public void close() throws IOException {
-        Files.deleteIfExists(Paths.get(TEMP_FILE));
-    }
+    public void close() throws IOException {}
 }

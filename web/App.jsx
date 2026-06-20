@@ -1,12 +1,32 @@
 import React, { useState, useEffect, useRef } from 'react';
+import { ConfigDTO } from './dtos/ConfigDTO.js';
 import { Network } from 'vis-network';
 import { DataSet } from 'vis-data';
 
-// API SERVICE
+// ENHANCED API SERVICE
+const handleApiError = async (res) => {
+  if (!res.ok) {
+    let errorText = "An unexpected server error occurred.";
+    try {
+      const text = await res.text();
+      try {
+        const errJson = JSON.parse(text);
+        errorText = errJson.message || errJson.error || text;
+      } catch {
+        errorText = text || errorText;
+      }
+    } catch (e) {
+      // Safe fallback
+    }
+    throw new Error(errorText);
+  }
+  return res.json();
+};
+
 const ApiService = {
   getGraph: async () => {
     const res = await fetch('/graph');
-    return res.json();
+    return handleApiError(res);
   },
   deployConfig: async (text) => {
     const params = new URLSearchParams();
@@ -16,30 +36,25 @@ const ApiService = {
       headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
       body: params
     });
-    return res.json();
+    return handleApiError(res);
   },
   publishMessage: async (topic, message) => {
     const res = await fetch(`/publish?topic=${encodeURIComponent(topic)}&message=${encodeURIComponent(message)}`);
-    return res.json();
+    return handleApiError(res);
   },
   resetGraph: async () => {
     const res = await fetch('/reset', { method: 'POST' });
-    return res.json();
+    return handleApiError(res);
   }
 };
 
-
 // SUB COMPONENTS
-
-// Component handling user actions (Deploy, Publish, Reset)
-const ControlPanel = ({ onDeploy, onPublish, onReset }) => {
+const ControlPanel = ({ onDeploy, onPublish, onReset, onError }) => {
   const [topic, setTopic] = useState('');
   const [message, setMessage] = useState('');
-
-  // New state variables for the advanced deployment panel
   const [selectedFile, setSelectedFile] = useState(null);
   const [jsonSnippet, setJsonSnippet] = useState('');
-  const [mode, setMode] = useState('file'); // 'file' | 'snippet'
+  const [mode, setMode] = useState('file'); 
   const [isDeployed, setIsDeployed] = useState(true);
 
   const handleDrop = (e) => {
@@ -52,31 +67,49 @@ const ControlPanel = ({ onDeploy, onPublish, onReset }) => {
   const handleFileSelect = (file) => {
     setSelectedFile(file);
     setMode('file');
-    setIsDeployed(false); // Enable the deploy button for the new file
+    setIsDeployed(false);
   };
 
   const handleSnippetChange = (e) => {
     setJsonSnippet(e.target.value);
-    setIsDeployed(false); // Enable the deploy button for the new edit
+    setIsDeployed(false);
   };
 
   const handleDeployClick = async () => {
-    if (mode === 'file' && selectedFile) {
-      const text = await selectedFile.text();
-      onDeploy(text);
+    try {
+      let textToDeploy = '';
+      let fileName = null;
+
+      if (mode === 'file' && selectedFile) {
+        fileName = selectedFile.name;
+        textToDeploy = await selectedFile.text();
+      } else if (mode === 'snippet' && jsonSnippet.trim()) {
+        textToDeploy = jsonSnippet;
+      }
+
+      if (fileName && !fileName.toLowerCase().endsWith('.json')) {
+        throw new Error("Invalid file type. Please upload a .json file.");
+      }
+
+      const configDto = new ConfigDTO(textToDeploy);
+
+      await onDeploy(textToDeploy);
       setIsDeployed(true);
-    } else if (mode === 'snippet' && jsonSnippet.trim()) {
-      onDeploy(jsonSnippet);
-      setIsDeployed(true);
+      
+    } catch (err) {
+      onError(err.message);
     }
   };
 
-  const handleClearGraph = () => {
-    // An empty agents array replaces the server configuration with a blank graph
-    onDeploy('{"agents": []}');
-    setSelectedFile(null);
-    setJsonSnippet('');
-    setIsDeployed(true);
+  const handleClearGraph = async () => {
+    try {
+      await onDeploy('{"agents": []}');
+      setSelectedFile(null);
+      setJsonSnippet('');
+      setIsDeployed(true);
+    } catch(err) {
+      onError(err.message);
+    }
   };
 
   const handleSubmit = (e) => {
@@ -88,17 +121,16 @@ const ControlPanel = ({ onDeploy, onPublish, onReset }) => {
     }
   };
 
-  // Compute whether the deploy button should be active
   const canDeploy = (mode === 'file' && selectedFile && !isDeployed) ||
                     (mode === 'snippet' && jsonSnippet.trim() && !isDeployed);
 
   return (
-    <div style={styles.sidebarLeft}>
-      <h2 style={styles.heading}>Deploy Config</h2>
+    <div className="sidebar-left">
+      <h2 className="heading">Deploy Config</h2>
       
-      <div style={styles.tabContainer}>
-        <div onClick={() => setMode('file')} style={mode === 'file' ? styles.activeTab : styles.tab}>File</div>
-        <div onClick={() => setMode('snippet')} style={mode === 'snippet' ? styles.activeTab : styles.tab}>Snippet</div>
+      <div className="tab-container">
+        <div onClick={() => setMode('file')} className={mode === 'file' ? "active-tab" : "tab"}>File</div>
+        <div onClick={() => setMode('snippet')} className={mode === 'snippet' ? "active-tab" : "tab"}>Snippet</div>
       </div>
 
       {mode === 'file' ? (
@@ -106,10 +138,10 @@ const ControlPanel = ({ onDeploy, onPublish, onReset }) => {
           onDrop={handleDrop}
           onDragOver={(e) => e.preventDefault()}
           onClick={() => document.getElementById('configFile').click()}
-          style={{ ...styles.dropZone, marginBottom: '10px' }}
+          className="drop-zone"
         >
           Drop your .json config here
-          <br /><small style={styles.textMuted}>or click to select</small>
+          <br /><small className="text-muted">or click to select</small>
           <input
             type="file"
             id="configFile"
@@ -117,41 +149,37 @@ const ControlPanel = ({ onDeploy, onPublish, onReset }) => {
             style={{ display: 'none' }}
             onChange={(e) => { 
               if (e.target.files.length) handleFileSelect(e.target.files[0]); 
-              e.target.value = null; // Reset value so re-selecting the same file triggers onChange
+              e.target.value = null;
             }}
           />
-          {selectedFile && <div style={styles.fileName}>Selected: {selectedFile.name}</div>}
+          {selectedFile && <div className="file-name">Selected: {selectedFile.name}</div>}
         </div>
       ) : (
         <textarea
-          style={styles.textArea}
+          className="text-area"
           placeholder='{ "agents": [ ... ] }'
           value={jsonSnippet}
           onChange={handleSnippetChange}
         />
       )}
 
-      <button 
-        onClick={handleDeployClick} 
-        disabled={!canDeploy} 
-        style={canDeploy ? styles.buttonSuccess : styles.buttonDisabled}
-      >
+      <button onClick={handleDeployClick} disabled={!canDeploy} className={canDeploy ? "button-success" : "button-disabled"}>
         Deploy Graph
       </button>
       
-      <button onClick={handleClearGraph} style={styles.buttonWarning}>
+      <button onClick={handleClearGraph} className="button-warning">
         Clear Graph
       </button>
 
-      <h2 style={styles.heading}>Publish Message</h2>
-      <form onSubmit={handleSubmit} style={styles.form}>
-        <input placeholder="Topic Name" value={topic} onChange={(e) => setTopic(e.target.value)} style={styles.input} required />
-        <input placeholder="Message Body" value={message} onChange={(e) => setMessage(e.target.value)} style={styles.input} required />
-        <button type="submit" style={styles.buttonPrimary}>Send Message</button>
+      <h2 className="heading">Publish Message</h2>
+      <form onSubmit={handleSubmit} className="form">
+        <input placeholder="Topic Name" value={topic} onChange={(e) => setTopic(e.target.value)} className="input" required />
+        <input placeholder="Message Body" value={message} onChange={(e) => setMessage(e.target.value)} className="input" required />
+        <button type="submit" className="button-primary">Send Message</button>
       </form>
 
-      <div style={styles.spacer}>
-        <button onClick={onReset} style={styles.buttonDanger}>
+      <div className="spacer">
+        <button onClick={onReset} className="button-danger">
           Reset all topics to 0
         </button>
       </div>
@@ -159,18 +187,17 @@ const ControlPanel = ({ onDeploy, onPublish, onReset }) => {
   );
 };
 
-// Component handling display of available topics
 const TopicList = ({ topics }) => (
-  <div style={styles.sidebarRight}>
-    <h2 style={styles.heading}>Topics</h2>
+  <div className="sidebar-right">
+    <h2 className="heading">Topics</h2>
     {topics.length === 0 ? (
-      <p style={styles.textMuted}>No topics yet.</p>
+      <p className="text-muted">No topics yet.</p>
     ) : (
-      <div style={styles.topicList}>
+      <div className="topic-list">
         {topics.map((t) => (
-          <div key={t.name} style={styles.topicItem}>
-            <strong style={styles.topicName}>{t.name}</strong>
-            <span style={styles.topicBadge}>{t.value}</span>
+          <div key={t.name} className="topic-item">
+            <strong className="topic-name">{t.name}</strong>
+            <span className="topic-badge">{t.value}</span>
           </div>
         ))}
       </div>
@@ -181,11 +208,17 @@ const TopicList = ({ topics }) => (
 // MAIN APP COMPONENT
 export default function App() {
   const [topics, setTopics] = useState([]);
+  const [toast, setToast] = useState(null);
 
   const containerRef = useRef(null);
   const networkRef = useRef(null);
   const nodesRef = useRef(new DataSet([]));
   const edgesRef = useRef(new DataSet([]));
+
+  const triggerError = (msg) => {
+    setToast(msg);
+    setTimeout(() => setToast(null), 10000); 
+  };
 
   useEffect(() => {
     if (containerRef.current && !networkRef.current) {
@@ -193,7 +226,6 @@ export default function App() {
         containerRef.current,
         { nodes: nodesRef.current, edges: edgesRef.current },
         { 
-          nodes: { shape: "dot", size: 16 }, 
           edges: { arrows: "to" }, 
           physics: { 
             solver: 'repulsion',
@@ -216,7 +248,18 @@ export default function App() {
     if (data?.nodes && data?.edges) {
       nodesRef.current.clear();
       edgesRef.current.clear();
-      nodesRef.current.add(data.nodes);
+
+      const styledNodes = data.nodes.map(n => {
+        const isAgent = n.label && n.label.includes('Agent');
+        return {
+          ...n,
+          shape: isAgent ? 'dot' : 'box',
+          size: isAgent ? 16 : undefined,
+          shapeProperties: isAgent ? {} : { borderRadius: 0 } 
+        };
+      });
+
+      nodesRef.current.add(styledNodes);
       edgesRef.current.add(data.edges);
 
       if (!skipTopicUpdate) {
@@ -228,17 +271,14 @@ export default function App() {
           .map(n => {
             const rawLabel = String(n.label || '');
             const parts = rawLabel.replace(/\\n/g, '\n').split('\n');
-            
             let name = parts[0].trim();
             if ((name.length === 2 && name.startsWith('T')) || (name.startsWith('T') && n.color === 'lightblue')) {
               name = name.substring(1);
             }
-            
             let value = parts.length > 1 ? parts[1].trim() : 'null';
             if (value.startsWith('(') && value.endsWith(')')) {
               value = value.slice(1, -1);
             }
-            
             return { name, value };
           })
           .sort((a, b) => a.name.localeCompare(b.name));
@@ -253,7 +293,7 @@ export default function App() {
       const data = await ApiService.getGraph();
       updateGraph(data, skipTopicUpdate);
     } catch (err) {
-      console.error("Failed to load graph", err);
+      triggerError("Failed to load graph connection.");
     }
   };
 
@@ -262,7 +302,8 @@ export default function App() {
       const data = await ApiService.deployConfig(configText);
       updateGraph(data);
     } catch (err) {
-      console.error("Failed to deploy config", err);
+      triggerError(err.message);
+      throw err;
     }
   };
 
@@ -270,9 +311,9 @@ export default function App() {
     try {
       const data = await ApiService.publishMessage(topic, msg);
       if (data.topics) setTopics(data.topics);
-      loadGraphData(true); // Trust the server's topics, skip extraction!
+      loadGraphData(true);
     } catch (err) {
-      console.error("Failed to publish", err);
+      triggerError(err.message);
     }
   };
 
@@ -280,51 +321,30 @@ export default function App() {
     try {
       const data = await ApiService.resetGraph();
       if (data.topics) setTopics(data.topics);
-      loadGraphData(true); // Trust the server's topics, skip extraction!
+      loadGraphData(true); 
     } catch (err) {
-      console.error("Failed to reset", err);
+      triggerError(err.message);
     }
   };
 
   return (
-    <div style={styles.container}>
-      <ControlPanel onDeploy={handleDeploy} onPublish={handlePublish} onReset={handleReset} />
+    <div className="container">
+      <ControlPanel onDeploy={handleDeploy} onPublish={handlePublish} onReset={handleReset} onError={triggerError} />
       
-      <div style={styles.graphContainer}>
-        <div ref={containerRef} style={styles.graph} />
+      <div className="graph-container">
+        <div ref={containerRef} className="graph" />
+        
+        {/* DISPOSABLE ERROR TOAST */}
+        {toast && (
+          <div className="error-toast">
+            <strong style={{ display: 'block', marginBottom: '5px' }}>⚠️ Error</strong>
+            {toast}
+            <div className="toast-progress-bar"></div>
+          </div>
+        )}
       </div>
 
       <TopicList topics={topics} />
     </div>
   );
 }
-
-// STYLES OOBJECT
-// Centralizing CSS keeps JSX readable and strictly separates presentation logic.
-const styles = {
-  container: { display: 'flex', height: '100vh', margin: 0, fontFamily: 'sans-serif', color: '#333' },
-  sidebarLeft: { width: '300px', padding: '20px', background: '#f8f9fa', borderRight: '1px solid #dee2e6', display: 'flex', flexDirection: 'column' },
-  sidebarRight: { width: '250px', padding: '20px', background: '#f8f9fa', borderLeft: '1px solid #dee2e6', overflowY: 'auto' },
-  graphContainer: { flex: 1, position: 'relative', background: '#fff' },
-  graph: { width: '100%', height: '100%' },
-  heading: { marginTop: 0 },
-  dropZone: { border: '2px dashed #adb5bd', borderRadius: '8px', padding: '30px 10px', textAlign: 'center', cursor: 'pointer', background: '#fff', transition: 'border 0.2s' },
-  textMuted: { color: '#6c757d' },
-  form: { display: 'flex', flexDirection: 'column', gap: '10px' },
-  input: { padding: '8px', borderRadius: '4px', border: '1px solid #ced4da' },
-  buttonPrimary: { padding: '10px', background: '#0d6efd', color: '#fff', border: 'none', borderRadius: '4px', cursor: 'pointer', fontWeight: 'bold' },
-  buttonDanger: { width: '100%', padding: '12px', background: '#dc3545', color: '#fff', border: 'none', borderRadius: '4px', cursor: 'pointer', fontWeight: 'bold' },
-  spacer: { marginTop: 'auto', paddingTop: '20px' },
-  topicList: { display: 'flex', flexDirection: 'column', gap: '10px' },
-  topicItem: { background: '#fff', padding: '10px', borderRadius: '6px', border: '1px solid #dee2e6', display: 'flex', justifyContent: 'space-between', alignItems: 'center' },
-  topicName: { color: '#0d6efd' },
-  topicBadge: { background: '#e9ecef', padding: '2px 8px', borderRadius: '12px', fontSize: '0.9em' },
-  tabContainer: { display: 'flex', marginBottom: '15px', gap: '5px' },
-  tab: { flex: 1, padding: '8px', cursor: 'pointer', border: '1px solid #ced4da', background: '#e9ecef', borderRadius: '4px', textAlign: 'center', fontSize: '0.9em' },
-  activeTab: { flex: 1, padding: '8px', cursor: 'pointer', border: '1px solid #0d6efd', background: '#0d6efd', color: '#fff', borderRadius: '4px', textAlign: 'center', fontWeight: 'bold', fontSize: '0.9em' },
-  textArea: { width: '100%', height: '120px', padding: '8px', borderRadius: '4px', border: '1px solid #ced4da', resize: 'vertical', boxSizing: 'border-box', fontFamily: 'monospace', fontSize: '0.85em' },
-  fileName: { marginTop: '10px', fontSize: '0.9em', color: '#0d6efd', wordBreak: 'break-all', fontWeight: 'bold' },
-  buttonSuccess: { width: '100%', padding: '10px', background: '#198754', color: '#fff', border: 'none', borderRadius: '4px', cursor: 'pointer', fontWeight: 'bold', marginBottom: '10px' },
-  buttonDisabled: { width: '100%', padding: '10px', background: '#ced4da', color: '#fff', border: 'none', borderRadius: '4px', cursor: 'not-allowed', fontWeight: 'bold', marginBottom: '10px' },
-  buttonWarning: { width: '100%', padding: '10px', background: '#ffc107', color: '#000', border: 'none', borderRadius: '4px', cursor: 'pointer', fontWeight: 'bold', marginBottom: '30px' }
-};

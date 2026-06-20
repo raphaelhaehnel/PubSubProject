@@ -7,16 +7,13 @@ class GraphCoreTest {
 
     @Test
     void testMessageConversions() {
-        // Test text-only message
         Message textMsg = new Message("HelloWorld");
         assertEquals("HelloWorld", textMsg.asText);
         assertTrue(Double.isNaN(textMsg.asDouble), "Non-numeric text should yield Double.NaN");
 
-        // Test valid numeric string message
         Message strNumMsg = new Message("3.1415");
         assertEquals(3.1415, strNumMsg.asDouble, "String should be correctly parsed to Double");
 
-        // Test direct double message
         Message doubleMsg = new Message(42.0);
         assertEquals("42.0", doubleMsg.asText);
         assertEquals(42.0, doubleMsg.asDouble);
@@ -28,7 +25,6 @@ class GraphCoreTest {
         Node nodeB = new Node("B");
         Node nodeC = new Node("C");
 
-        // A -> B -> C
         nodeA.addEdge(nodeB);
         nodeB.addEdge(nodeC);
 
@@ -40,7 +36,6 @@ class GraphCoreTest {
         Node nodeA = new Node("A");
         Node nodeB = new Node("B");
 
-        // A -> B -> A
         nodeA.addEdge(nodeB);
         nodeB.addEdge(nodeA);
 
@@ -54,7 +49,6 @@ class GraphCoreTest {
         Node nodeC = new Node("C");
         Node nodeD = new Node("D");
 
-        // A -> B -> C -> D -> B (Cycle involves B, C, D)
         nodeA.addEdge(nodeB);
         nodeB.addEdge(nodeC);
         nodeC.addEdge(nodeD);
@@ -66,10 +60,7 @@ class GraphCoreTest {
     @Test
     void testNodeDetectsSelfLoop() {
         Node nodeA = new Node("A");
-        
-        // A -> A
         nodeA.addEdge(nodeA);
-
         assertTrue(nodeA.hasCycles(), "Graph has a self-loop; must detect cycle.");
     }
 
@@ -84,5 +75,22 @@ class GraphCoreTest {
         topic.publish(msg);
         
         assertEquals(msg, topic.getLastMessage(), "Topic should store the last published message.");
+    }
+
+    @Test
+    void testNodeDetectsCycleWithSinkBranch() {
+        Node nodeA = new Node("A");
+        Node nodeB = new Node("B");
+        Node nodeC = new Node("C");
+        Node nodeSink = new Node("Sink");
+
+        // A -> B -> C -> A (The Cycle)
+        // C -> Sink (The Dead-End Branch)
+        nodeA.addEdge(nodeB);
+        nodeB.addEdge(nodeC);
+        nodeC.addEdge(nodeA); 
+        nodeC.addEdge(nodeSink); 
+
+        assertTrue(nodeA.hasCycles(), "Graph must detect the cycle even if a branch leads to a dead-end sink.");
     }
 }

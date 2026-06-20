@@ -17,6 +17,7 @@ We have implemented a comprehensive test suite using **JUnit 5** and **Mockito**
 - **Unit Tests:** Individual logic verification for all agents (including edge cases like division-by-zero and NaN handling), message parsing, and configuration loading.
 - **Integration Tests:** Verifying multi-agent graph flows, cycle detection algorithms, and end-to-end HTTP request routing.
 - **Stress & Concurrency Testing:** Simulating high-load multi-threaded environments to ensure the `TopicManager` and `ParallelAgent` executions are completely thread-safe and free of race conditions.
+- **Edge-Case API Testing:** Ensuring the server safely catches bad JSON payloads, handles missing nodes, and correctly translates them into proper HTTP response codes (400, 404, 500).
 
 ### How to Run Tests
 
@@ -30,7 +31,7 @@ Or, if using an IDE like **IntelliJ IDEA** or **VS Code**, you can navigate to t
 
 ---
 
-## Features
+## Features & Server Scope
 
 - A minimal **HTTP server** written from scratch using `java.net.Socket`, with a small servlet API and a fixed-size worker thread pool.
 - A **publisher-subscriber** core: topics, messages, agents, and a thread-safe `TopicManager` singleton.
@@ -44,7 +45,18 @@ Or, if using an IDE like **IntelliJ IDEA** or **VS Code**, you can navigate to t
 
   `PlusAgent`, `MulAgent` and `AvgAgent` accept any number of inputs. They wait until they have received at least one value on every input before publishing for the first time.
 - A **generic configuration loader** that builds the agent graph from a JSON file, using Java reflection.
+- **Robust Error Handling & Rollbacks:** The server safely catches bad configurations. If a syntactically valid JSON introduces a cyclic dependency, the server rejects it and triggers an automatic rollback (clearing the corrupted state from the `TopicManager`) to prevent memory leaks and deadlocks.
 - A **graph view**: every topic / agent is shown as a node, with the latest message displayed under the node name.
+
+---
+
+## End-to-End Validation & "Fail-Fast" Architecture
+
+To ensure strict client-server stability, the project implements a shared architectural boundary between the frontend and backend using **Data Transfer Objects (DTOs)**.
+
+- **Frontend Scope (Fail-Fast):** Before making network requests, the React application intercepts user inputs and instantiates client-side DTOs (`ConfigDTO`, `AgentDTO`). These classes act as strict schema validators. They ensure the uploaded file has a `.json` extension, contains syntactically valid JSON, and possesses all mandatory fields (`agents`, `type`, `subs`, `pubs`). If validation fails, an error is thrown locally, preventing garbage data from ever crossing the network.
+- **Mutual DTO Mapping:** The client-side DTOs strictly mirror the expected Java configuration objects. This creates a predictable API contract where the frontend knows exactly what the backend expects.
+- **Server Scope (The Gatekeeper):** The Java backend acts as the ultimate authority. It parses the incoming configuration using Jackson. If the syntax is malformed, or an invalid agent type is referenced via reflection, the server intercepts the `IllegalArgumentException` and gracefully returns a `400 Bad Request`. Additionally, the API intercepts missing topics (e.g., trying to publish to a node that doesn't exist) and cleanly returns a `404 Not Found`.
 
 ---
 
@@ -53,8 +65,8 @@ Or, if using an IDE like **IntelliJ IDEA** or **VS Code**, you can navigate to t
 With permission, this project elevates the base requirements to meet modern industry standards, specifically transitioning from an older Server-Side Rendering (SSR) architecture to a decoupled RESTful API and Single Page Application (SPA):
 
 - **Modern Web UI (React vs. iFrames):** Instead of using 3 static `iframe` tags, the frontend is built as a unified React application (`web` directory). It provides a seamless, dynamic user experience without full-page reloads, utilizing `vis-network`'s advanced repulsion physics for clean graph rendering.
-- **RESTful JSON API vs. HTML Servlets:** To ensure strict Client-Server decoupling, the `TopicDisplayer` and `ConfLoader` servlets return `application/json` DTOs rather than rendering raw HTML strings. 
-- **View Layer (`JsonGraphWriter`):** The requirement for an `HtmlGraphWriter` in the `view` package was honored conceptually. The view layer abstracts the visual representation of the `Graph` object, but it translates the graph state into a structured JSON visualization payload for the React client rather than legacy HTML.
+- **RESTful JSON API vs. HTML Servlets:** To ensure strict Client-Server decoupling, the `TopicDisplayer` and `ConfLoader` servlets return `application/json` payloads rather than rendering raw HTML strings. 
+- **Graceful Error UI:** Instead of crashing or showing raw server logs, the frontend parses custom HTTP error responses (400, 404, etc.) and displays them using a sleek, disposable Toast notification with an animated CSS progress bar.
 - **Static Resource Serving:** The server includes a dedicated `StaticResourceServlet` mapped to `/app/` that securely serves the compiled React assets (JS, CSS, HTML) while strictly preventing directory traversal attacks.
 
 ---
@@ -187,13 +199,13 @@ Serves the static React front-end and its compiled assets (HTML / CSS / JS).
 
 ---
 
-## Internal Representation of HTTP Entities
+## Server-Side Error Handling & HTTP Entities
 
 To support robust error handling and ensure predictable API outputs, the web server uses Data Transfer Objects (DTOs) for its data lifecycle:
 
 1. **`server.dtos.HTTPRequest`**: The `RequestParser` parses the raw `Socket` InputStream into this strongly-typed object.
 2. **`server.dtos.HTTPResponse`**: Servlets do not interact with `OutputStream`s directly. Instead, they process an `HTTPRequest` and return an `HTTPResponse` DTO containing the status code, headers, and body.
-3. **`server.exceptions.HTTPException`**: Servlets throw this exception to gracefully bubble up status codes (like `404` or `400`). The core `MyHTTPServer` intercepts these exceptions and guarantees a properly formatted `application/json` error response is safely written back to the client.
+3. **`server.exceptions.HTTPException`**: Servlets throw this exception to gracefully bubble up status codes (like `404 Not Found` or `400 Bad Request`). The core `MyHTTPServer` intercepts these exceptions and guarantees a properly formatted `application/json` error response is safely written back to the client.
 
 ---
 
@@ -213,12 +225,15 @@ src/
     └── server/                    # Server routing and HTTP parser tests
 
 web/                               # Modern React frontend
+├── src/
+│   └── dtos/                      # Client-side validation schemas (ConfigDTO, AgentDTO)
 ├── App.jsx                        # Main React component & UI logic
 ├── main.jsx                       # React entry point
+├── styles.css                     # External styles and CSS animations
 ├── index.html                     # Vite HTML template
 ├── package.json                   # Node dependencies and build scripts
 ├── vite.config.js                 # Vite bundler configuration
-└── dist/                          # Compiled frontend
+└── dist/                          # Compiled frontend (generated after build)
 ```
 
 ---

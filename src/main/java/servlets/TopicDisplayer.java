@@ -8,7 +8,6 @@ import server.dtos.HTTPResponse;
 import server.enums.HTTPStatus;
 import server.exceptions.HTTPException;
 
-
 /**
  * GET /publish?topic=...&message=... : publishes the message on the
  * given topic and returns a JSON snapshot of every topic's latest value.
@@ -25,8 +24,25 @@ public class TopicDisplayer extends BaseServlet {
         }
 
         TopicManagerSingleton.TopicManager topicManager = TopicManagerSingleton.get();
-        Topic topic = topicManager.getTopic(topicName);
+        
+        // Verify the topic actually exists in the graph BEFORE calling getTopic()
+        // This prevents the TopicManager from accidentally auto-generating a missing node.
+        boolean topicExists = false;
+        for (Topic t : topicManager.getTopics()) {
+            if (t.name.equals(topicName)) {
+                topicExists = true;
+                break;
+            }
+        }
 
+        if (!topicExists) {
+            throw new HTTPException(
+                HTTPStatus.NOT_FOUND, 
+                "Node '" + topicName + "' does not exist in the current graph."
+            );
+        }
+
+        Topic topic = topicManager.getTopic(topicName);
         topic.publish(new Message(messageText));
 
         return sendJsonResponse(buildTopicsJson(topicManager));
@@ -42,7 +58,7 @@ public class TopicDisplayer extends BaseServlet {
             first = false;
 
             Message m = t.getLastMessage();
-            String value = (m == null)              ? "null"
+            String value = (m == null) ? "null"
                     : !Double.isNaN(m.asDouble) ? Double.toString(m.asDouble)
                     : m.asText;
 
