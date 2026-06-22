@@ -1,4 +1,6 @@
-package graph;
+package graph.agents;
+
+import graph.Message;
 
 /**
  * Anything that can publish messages to topics and/or subscribe to them

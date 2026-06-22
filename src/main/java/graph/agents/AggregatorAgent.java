@@ -1,5 +1,7 @@
-package graph;
+package graph.agents;
 
+import graph.Message;
+import graph.TopicManagerSingleton;
 import graph.TopicManagerSingleton.TopicManager;
 
 import java.util.Arrays;

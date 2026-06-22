@@ -2,15 +2,18 @@ package servlets;
 
 import graph.GenericConfig;
 import graph.Graph;
-import server.RequestParser;
-import view.HtmlGraphWriter;
+import graph.TopicManagerSingleton;
+import server.dtos.HTTPRequest;
+import server.dtos.HTTPResponse;
+import server.enums.HTTPStatus;
+import server.exceptions.HTTPException;
+import view.JsonGraphWriter;
 
-import java.io.IOException;
-import java.io.OutputStream;
 import java.net.URLDecoder;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
-import java.nio.file.Paths;
+import java.nio.file.Path;
+import java.io.IOException;
 
 /**
  * POST /upload : accepts a JSON configuration in the "config" form
@@ -19,44 +22,56 @@ import java.nio.file.Paths;
  */
 public class ConfLoader extends BaseServlet {
 
-    // GenericConfig reads from a File, so we write the upload to disk first.
-    private static final String TEMP_FILE = "uploaded_config.json";
-
     @Override
-    public void handle(RequestParser.RequestInfo ri, OutputStream toClient) throws IOException {
+    public HTTPResponse handle(HTTPRequest request) throws HTTPException {
+        String configText = request.getParameters().get("config");
+
+        if (configText == null || configText.isEmpty()) {
+            throw new HTTPException(HTTPStatus.BAD_REQUEST, "No config provided");
+        }
+
+        String decodedText = URLDecoder.decode(configText, StandardCharsets.UTF_8);
+        Path tempFilePath = null;
+
         try {
-            String configText = ri.getParameters().get("config");
-
-            if (configText == null || configText.isEmpty()) {
-                sendResponse(toClient, 400, "<html><body>No config provided</body></html>");
-                return;
-            }
-
-            String decodedText = URLDecoder.decode(configText, StandardCharsets.UTF_8);
-            Files.writeString(Paths.get(TEMP_FILE), decodedText);
+            tempFilePath = Files.createTempFile("graph_config_", ".json");
+            Files.writeString(tempFilePath, decodedText);
 
             GenericConfig config = new GenericConfig();
-            config.setConfFile(TEMP_FILE);
+            config.setConfFile(tempFilePath.toString());
+            // Throws IllegalArgumentException if the JSON is malformed
+            // or if reflection fails (e.g., non-existent agent type)
             config.create();
 
             Graph graph = new Graph();
             graph.createFromTopics();
 
             if (graph.hasCycles()) {
-                throw new RuntimeException(
-                        "The current configuration has cycles. Please provide a graph without cycles.");
+                // Rollback the corrupted state to prevent memory leaks or deadlocks
+                TopicManagerSingleton.get().clear();
+                throw new HTTPException(
+                    HTTPStatus.BAD_REQUEST, 
+                    "The current configuration has cycles. Please provide a graph without cycles."
+                );
             }
 
-            sendJsonResponse(toClient, HtmlGraphWriter.getGraphJSON(graph));
+            return sendJsonResponse(JsonGraphWriter.getGraphJSON(graph));
 
-        } catch (Exception e) {
-            e.printStackTrace();
-            sendResponse(toClient, 500, "<html><body>Error processing config</body></html>");
+        } catch (IllegalArgumentException e) {
+            throw new HTTPException(HTTPStatus.BAD_REQUEST, "Invalid JSON format or schema: " + e.getMessage(), e);
+            
+        } catch (IOException e) {
+            throw new HTTPException(HTTPStatus.INTERNAL_SERVER_ERROR, "Failed to process configuration file", e);
+            
+        } finally {
+            if (tempFilePath != null) {
+                try {
+                    Files.deleteIfExists(tempFilePath);
+                } catch (IOException ignored) {}
+            }
         }
     }
 
     @Override
-    public void close() throws IOException {
-        Files.deleteIfExists(Paths.get(TEMP_FILE));
-    }
+    public void close() throws IOException {}
 }

@@ -4,6 +4,8 @@ import java.util.ArrayList;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
 
+import graph.agents.Agent;
+
 /**
  * The full set of nodes representing the current pub-sub state.
  * Topics become "T"-prefixed nodes, agents become "A"-prefixed nodes,

@@ -1,47 +1,39 @@
 package servlets;
 
-import java.io.IOException;
-import java.io.OutputStream;
 import java.nio.charset.StandardCharsets;
-import java.util.Map;
+
+import server.enums.HTTPStatus;
+import server.dtos.HTTPResponse;
+import server.enums.ContentType;
 
 /**
- * Shared HTTP response helpers so concrete servlets only contain
- * business logic.
+ * Shared HTTP response helpers to generate common HTTPResponse DTOs.
  */
 public abstract class BaseServlet implements Servlet {
 
-    /** HTML response with the given status code. */
-    protected void sendResponse(OutputStream out, int statusCode, String body) throws IOException {
-        sendRaw(out, statusCode, "text/html", body);
+    protected HTTPResponse sendResponse(HTTPStatus status, String body) {
+        return new HTTPResponse(
+            status,
+            ContentType.HTML.mimeType(), 
+            body.getBytes(StandardCharsets.UTF_8)
+        );
     }
 
-    /** JSON response with status 200. */
-    protected void sendJsonResponse(OutputStream out, String body) throws IOException {
-        sendRaw(out, 200, "application/json", body);
+    // Overloaded convenience method for default (empty) 200 OK responses
+    protected HTTPResponse sendResponse(String body) {
+        return sendResponse(HTTPStatus.OK, body);
     }
 
-    private static final Map<Integer, String> STATUS_TEXTS = Map.of(
-            200, "OK",
-            400, "Bad Request",
-            404, "Not Found",
-            500, "Internal Server Error"
-    );
+    protected HTTPResponse sendJsonResponse(HTTPStatus status, String body) throws NullPointerException {
+        return new HTTPResponse(
+            status,
+            ContentType.JSON.mimeType(), 
+            body.getBytes(StandardCharsets.UTF_8)
+        );
+    }
 
-    private void sendRaw(OutputStream out, int statusCode, String contentType, String body)
-            throws IOException {
-
-        byte[] bodyBytes = body.getBytes(StandardCharsets.UTF_8);
-        String statusText = STATUS_TEXTS.getOrDefault(statusCode, "Unknown");
-
-        String header =
-                "HTTP/1.1 " + statusCode + " " + statusText + "\r\n" +
-                "Content-Type: " + contentType + "; charset=UTF-8\r\n" +
-                "Content-Length: " + bodyBytes.length + "\r\n" +
-                "\r\n";
-
-        out.write(header.getBytes(StandardCharsets.UTF_8));
-        out.write(bodyBytes);
-        out.flush();
+    // Overloaded convenience method for default (empty) 200 OK JSON responses
+    protected HTTPResponse sendJsonResponse(String body) {
+        return sendJsonResponse(HTTPStatus.OK, body);
     }
 }

@@ -15,7 +15,7 @@ import java.util.Map;
  * </pre>
  * Topic nodes (name starts with "T") are blue, agent nodes ("A") green.
  */
-public class HtmlGraphWriter {
+public class JsonGraphWriter {
 
     public static String getGraphJSON(Graph graph) {
         StringBuilder json = new StringBuilder();

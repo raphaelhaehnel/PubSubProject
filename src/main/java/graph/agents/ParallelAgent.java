@@ -1,8 +1,10 @@
-package graph;
+package graph.agents;
 
 import java.util.concurrent.ArrayBlockingQueue;
 import java.util.concurrent.BlockingQueue;
 import java.util.concurrent.atomic.AtomicBoolean;
+
+import graph.Message;
 
 /**
  * Wraps an agent so its callback runs on its own thread.

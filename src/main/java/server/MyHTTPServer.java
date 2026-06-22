@@ -1,6 +1,10 @@
 package server;
 
 import servlets.Servlet;
+import server.dtos.HTTPRequest;
+import server.dtos.HTTPResponse;
+import server.enums.HTTPStatus;
+import server.exceptions.HTTPException;
 
 import java.io.BufferedReader;
 import java.io.IOException;
@@ -81,7 +85,7 @@ public class MyHTTPServer extends Thread implements HTTPServer {
             // MyHTTPServer extends Thread; super.start() runs run() on a
             // background thread so this method can return immediately.
             super.start();
-            logger.log(Level.INFO, "MyHTTPServer started on port {0} with {1} threads.", new Object[]{port, nThreads});
+            logger.log(Level.INFO, "MyHTTPServer started on port {0} with {1} threads.", new Object[]{String.valueOf(port), String.valueOf(nThreads)});
         } else {
             logger.log(Level.WARNING, "Server start() called when already running.");
         }
@@ -90,7 +94,7 @@ public class MyHTTPServer extends Thread implements HTTPServer {
     @Override
     public void run() {
         try (ServerSocket ss = createServerSocket()) {
-            logger.log(Level.INFO, "Server socket listening on port {0}", port);
+            logger.log(Level.INFO, "Server socket listening on port {0}", String.valueOf(port));
             acceptClientConnections(ss);
         } catch (IOException e) {
             if (running) {
@@ -183,7 +187,7 @@ public class MyHTTPServer extends Thread implements HTTPServer {
     }
 
     private void processClientRequest(BufferedReader br, OutputStream out) throws IOException {
-        RequestParser.RequestInfo ri;
+        HTTPRequest ri;
         String requestIdentifier;
         try {
             ri = RequestParser.parseRequest(br);
@@ -191,11 +195,7 @@ public class MyHTTPServer extends Thread implements HTTPServer {
         } catch (IOException e) {
             if (e.getMessage() == null || !e.getMessage().contains("Empty or null request line")) {
                 logger.log(Level.WARNING, "IOException during request parsing: {0}", e.getMessage());
-                try {
-                    writeBadRequest(out);
-                } catch (IOException ioe) {
-                    logger.log(Level.WARNING, "Failed to send 400 error response.", ioe);
-                }
+                writeResponse(out, createJsonErrorResponse(HTTPStatus.BAD_REQUEST, "Malformed request reading failed"));
                 return;
             } else {
                 throw e;
@@ -206,25 +206,18 @@ public class MyHTTPServer extends Thread implements HTTPServer {
 
         if (servlet == null) {
             logger.log(Level.INFO, "No servlet found for request: {0}", requestIdentifier);
-            try {
-                writeNotFound(out, "No servlet for " + ri.getHttpCommand() + " " + ri.getResourceUri());
-            } catch (IOException ioe) {
-                logger.log(Level.WARNING, "Failed to send 404 error response.", ioe);
-            }
+            writeResponse(out, createJsonErrorResponse(HTTPStatus.NOT_FOUND, "No servlet for " + ri.getHttpCommand() + " " + ri.getResourceUri()));
             return;
         }
 
         try {
-            servlet.handle(ri, out);
+            HTTPResponse response = servlet.handle(ri);
+            writeResponse(out, response);
+        } catch (HTTPException e) {
+            writeResponse(out, createJsonErrorResponse(e.getStatus(), e.getMessage()));
         } catch (Exception e) {
             logger.log(Level.SEVERE, "Error executing servlet " + servlet.getClass().getName() + " for request " + requestIdentifier, e);
-            try {
-                if (out != null) {
-                    writeInternalError(out);
-                }
-            } catch (IOException ioe) {
-                logger.log(Level.WARNING, "Failed to send 500 error response after servlet error.", ioe);
-            }
+            writeResponse(out, createJsonErrorResponse(HTTPStatus.INTERNAL_SERVER_ERROR, "Servlet execution failed"));
         }
     }
 
@@ -249,34 +242,24 @@ public class MyHTTPServer extends Thread implements HTTPServer {
         return matchingServlet;
     }
 
-    private void writeBadRequest(OutputStream out) throws IOException {
-        String resp = "HTTP/1.1 400 Bad Request\r\n" +
-                "Content-Type: text/plain\r\n" +
-                "Content-Length: " + "Malformed request reading failed".getBytes(java.nio.charset.StandardCharsets.UTF_8).length + "\r\n" +
-                "Connection: close\r\n\r\n" +
-                "Malformed request reading failed";
-        out.write(resp.getBytes(java.nio.charset.StandardCharsets.UTF_8));
+    private void writeResponse(OutputStream out, HTTPResponse response) throws IOException {
+        String statusText = HTTPStatus.getMessageForCode(response.getStatusCode());
+        StringBuilder header = new StringBuilder("HTTP/1.1 " + response.getStatusCode() + " " + statusText + "\r\n");
+        
+        for (Map.Entry<String, String> entry : response.getHeaders().entrySet()) {
+            header.append(entry.getKey()).append(": ").append(entry.getValue()).append("\r\n");
+        }
+        header.append("Connection: close\r\n\r\n");
+
+        out.write(header.toString().getBytes(java.nio.charset.StandardCharsets.UTF_8));
+        out.write(response.getBody());
         out.flush();
     }
 
-    private void writeNotFound(OutputStream out, String msg) throws IOException {
-        String resp = "HTTP/1.1 404 Not Found\r\n" +
-                "Content-Type: text/plain\r\n" +
-                "Content-Length: " + msg.getBytes(java.nio.charset.StandardCharsets.UTF_8).length + "\r\n" +
-                "Connection: close\r\n\r\n" +
-                msg;
-        out.write(resp.getBytes(java.nio.charset.StandardCharsets.UTF_8));
-        out.flush();
-    }
-
-    private void writeInternalError(OutputStream out) throws IOException {
-        String resp = "HTTP/1.1 500 Internal Server Error\r\n" +
-                "Content-Type: text/plain\r\n" +
-                "Content-Length: " + "Servlet execution failed".getBytes(java.nio.charset.StandardCharsets.UTF_8).length + "\r\n" +
-                "Connection: close\r\n\r\n" +
-                "Servlet execution failed";
-        out.write(resp.getBytes(java.nio.charset.StandardCharsets.UTF_8));
-        out.flush();
+    private HTTPResponse createJsonErrorResponse(HTTPStatus status, String message) {
+        String escapedMsg = message.replace("\"", "\\\"");
+        String jsonBody = "{\"error\": \"" + escapedMsg + "\"}";
+        return new HTTPResponse(status, "application/json", jsonBody.getBytes(java.nio.charset.StandardCharsets.UTF_8));
     }
 
     private void stopServer() {

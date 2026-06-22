@@ -1,13 +1,13 @@
 package servlets;
 
-import graph.Agent;
 import graph.Message;
 import graph.Topic;
 import graph.TopicManagerSingleton;
-import server.RequestParser;
+import graph.agents.Agent;
+import server.dtos.HTTPRequest;
+import server.dtos.HTTPResponse;
+import server.exceptions.HTTPException;
 
-import java.io.IOException;
-import java.io.OutputStream;
 import java.util.HashSet;
 import java.util.Set;
 
@@ -19,33 +19,27 @@ import java.util.Set;
 public class ResetServlet extends BaseServlet {
 
     @Override
-    public void handle(RequestParser.RequestInfo ri, OutputStream toClient) throws IOException {
-        try {
-            TopicManagerSingleton.TopicManager topicManager = TopicManagerSingleton.get();
+    public HTTPResponse handle(HTTPRequest request) throws HTTPException {
+        TopicManagerSingleton.TopicManager topicManager = TopicManagerSingleton.get();
 
-            // An agent can appear on several topics, so we deduplicate
-            // before calling reset().
-            Set<Agent> allAgents = new HashSet<>();
-            for (Topic t : topicManager.getTopics()) {
-                allAgents.addAll(t.getSubscribers());
-                allAgents.addAll(t.getPublishers());
-            }
-
-            for (Agent a : allAgents) {
-                a.reset();
-            }
-
-            Message zero = new Message("0");
-            for (Topic t : topicManager.getTopics()) {
-                t.publish(zero);
-            }
-
-            sendJsonResponse(toClient, buildTopicsJson(topicManager));
-
-        } catch (Exception e) {
-            e.printStackTrace();
-            sendResponse(toClient, 500, "<html><body>Server error during reset</body></html>");
+        // An agent can appear on several topics, so we deduplicate
+        // before calling reset().
+        Set<Agent> allAgents = new HashSet<>();
+        for (Topic t : topicManager.getTopics()) {
+            allAgents.addAll(t.getSubscribers());
+            allAgents.addAll(t.getPublishers());
         }
+
+        for (Agent a : allAgents) {
+            a.reset();
+        }
+
+        Message zero = new Message("0");
+        for (Topic t : topicManager.getTopics()) {
+            t.publish(zero);
+        }
+
+        return sendJsonResponse(buildTopicsJson(topicManager));
     }
 
     /** Same shape as {@link TopicDisplayer#buildTopicsJson}. */

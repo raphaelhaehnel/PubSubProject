@@ -6,6 +6,8 @@ import java.util.Arrays;
 import java.util.LinkedHashMap;
 import java.util.Map;
 
+import server.dtos.HTTPRequest;
+
 /**
  * Minimal HTTP request parser.
  * Query-string parameters and form-encoded body parameters are merged
@@ -14,7 +16,7 @@ import java.util.Map;
 public class RequestParser {
 
     /** Parses a full HTTP request (request line + headers + optional body). */
-    public static RequestInfo parseRequest(BufferedReader reader) throws IOException {
+    public static HTTPRequest parseRequest(BufferedReader reader) throws IOException {
         String requestLine = readRequestLine(reader);
         String[] requestLineParts = splitRequestLine(requestLine);
         validateRequestLine(requestLineParts);
@@ -31,7 +33,7 @@ public class RequestParser {
         byte[] content = readContent(reader, contentLength);
         readBodyParameters(content, parameters);
 
-        return new RequestInfo(httpCommand, uri, resourceUri, uriSegments, parameters, content);
+        return new HTTPRequest(httpCommand, uri, resourceUri, uriSegments, parameters, content);
     }
 
     private static String readRequestLine(BufferedReader reader) throws IOException {
@@ -160,49 +162,6 @@ public class RequestParser {
             return contentLength;
         } catch (NumberFormatException e) {
             throw new IOException("Invalid Content-Length header value: " + contentLengthHeader, e);
-        }
-    }
-
-    /** Immutable holder for everything extracted from a request. */
-    public static class RequestInfo {
-        private final String httpCommand;
-        private final String uri;
-        private final String resourceUri;
-        private final String[] uriSegments;
-        private final Map<String, String> parameters;
-        private final byte[] content;
-
-        public RequestInfo(String httpCommand, String uri, String resourceUri, String[] uriSegments, Map<String, String> parameters, byte[] content) {
-            this.httpCommand = httpCommand;
-            this.uri = uri;
-            this.resourceUri = resourceUri;
-            this.uriSegments = uriSegments;
-            this.parameters = parameters;
-            this.content = content;
-        }
-
-        public String getHttpCommand() {
-            return httpCommand;
-        }
-
-        public String getUri() {
-            return uri;
-        }
-
-        public String[] getUriSegments() {
-            return uriSegments;
-        }
-
-        public Map<String, String> getParameters() {
-            return parameters;
-        }
-
-        public byte[] getContent() {
-            return content;
-        }
-
-        public String getResourceUri() {
-            return resourceUri;
         }
     }
 }

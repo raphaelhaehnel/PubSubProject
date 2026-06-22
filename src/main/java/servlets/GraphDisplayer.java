@@ -1,11 +1,12 @@
 package servlets;
 
+import com.fasterxml.jackson.core.JsonProcessingException;
 import graph.Graph;
-import server.RequestParser;
-import view.HtmlGraphWriter;
-
-import java.io.IOException;
-import java.io.OutputStream;
+import server.dtos.HTTPRequest;
+import server.dtos.HTTPResponse;
+import server.enums.HTTPStatus;
+import server.exceptions.HTTPException;
+import view.JsonGraphWriter;
 
 /**
  * GET /graph : returns the current graph (topics + agents + edges +
@@ -14,17 +15,22 @@ import java.io.OutputStream;
 public class GraphDisplayer extends BaseServlet {
 
     @Override
-    public void handle(RequestParser.RequestInfo ri, OutputStream toClient) throws IOException {
-        try {
-            Graph graph = new Graph();
-            graph.createFromTopics();
-
-            sendJsonResponse(toClient, HtmlGraphWriter.getGraphJSON(graph));
-
-        } catch (Exception e) {
-            e.printStackTrace();
-            sendResponse(toClient, 500, "<html><body>Error loading graph</body></html>");
+    public HTTPResponse handle(HTTPRequest request) throws HTTPException {
+        Graph graph = new Graph();
+        graph.createFromTopics();
+        
+        // Safety check: Ensure the current state of the graph is valid.
+        if (graph.hasCycles()) {
+            throw new HTTPException(
+                HTTPStatus.INTERNAL_SERVER_ERROR, 
+                "Invalid graph state detected: The current topic configuration contains cycles."
+            );
         }
+
+        // Generate JSON and return 200 OK.
+        // StandardCharsets.UTF_8 is safe. Any unexpected serialization errors 
+        // will bubble up and be handled by the server's top-level 500 error handler.
+        return sendJsonResponse(JsonGraphWriter.getGraphJSON(graph));
     }
 
     @Override
