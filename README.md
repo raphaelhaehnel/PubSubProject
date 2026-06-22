@@ -155,6 +155,11 @@ Press the red **"Reset all topics to 0"** button. The server will:
 
 After the reset, every topic shows `0.0` and the graph view is refreshed.
 
+### 4. Clear graph
+Press the yellow **"Clear Graph"** button. The server will:
+- call `clear()` on `TopicManagerSingleton` to clear all topics.
+- return `{"nodes": [], "edges": []}` to the UI to clear the graph view.
+
 ---
 
 ## Configuration JSON Format
@@ -211,6 +216,9 @@ curl "http://localhost:8080/publish?topic=A&message=3"
 ### `POST /reset`
 Resets every agent's internal state and publishes `"0"` on every topic.
 
+### `POST /clear`
+Deletes the graph and every topic.
+
 ```bash
 curl -X POST http://localhost:8080/reset
 ```
@@ -243,6 +251,7 @@ src/
 │
 └── test/java/                     # Automated Test Suite
     ├── graph/                     # Agent logic, Math tests, Stress tests
+    ├── servlet/                   # ConfigLoader tests
     └── server/                    # Server routing and HTTP parser tests
 
 web/                               # Modern React frontend
@@ -256,6 +265,52 @@ web/                               # Modern React frontend
 ├── vite.config.js                 # Vite bundler configuration
 └── dist/                          # Compiled frontend (generated after build)
 ```
+
+---
+
+## Containerization
+
+The application is fully containerized as a single monolithic image using a three-stage Docker build — the `npm` stage compiles the React frontend, the `Maven` stage compiles the Java backend, and a lightweight `JRE-only` runtime stage assembles the final image.
+
+### Build and Run Locally with Docker
+Build the image from source and run it directly:
+```bash
+# Build the image
+docker build -t pubsub-app .
+
+# Run the container
+docker run -it --rm -p 8080:8080 pubsub-app
+```
+
+Then open your browser at http://localhost:8080/app.
+Press Ctrl+C in the terminal to stop the container.
+
+### Run with Docker Compose (Pre-built Image)
+To pull the published image from Docker Hub and run it without building locally:
+```bash
+docker compose up
+```
+This pulls `saridga/biu-pubsub-app:latest` automatically if it isn't already cached on your machine. To stop and remove the container:
+```bash
+docker compose down
+```
+
+###  Build the Image Locally with Docker Compose
+To force Docker Compose to build the image from the local `Dockerfile` instead of pulling it:
+```bash
+docker compose up --build
+```
+This rebuilds the image from scratch every time the flag is passed, which is useful after making source code changes. To run in detached (background) mode:
+```bash
+docker compose up --build -d
+```
+To stop:
+```bash
+docker compose down
+```
+
+> [!NOTE]
+> All three options serve the app on port `8080`. Make sure no other process is occupying that port before starting the container. If you need a different port, change the left-hand side of the `ports` mapping in `docker-compose.yaml` (e.g., `"9090:8080"`).
 
 ---
 

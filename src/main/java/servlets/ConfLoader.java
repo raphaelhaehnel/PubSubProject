@@ -1,8 +1,12 @@
 package servlets;
 
+import com.fasterxml.jackson.databind.ObjectMapper;
+import com.fasterxml.jackson.databind.exc.MismatchedInputException;
+import com.fasterxml.jackson.databind.exc.ValueInstantiationException;
 import graph.GenericConfig;
 import graph.Graph;
 import graph.TopicManagerSingleton;
+import servlets.dtos.ConfigDTO;
 import server.dtos.HTTPRequest;
 import server.dtos.HTTPResponse;
 import server.enums.HTTPStatus;
@@ -17,10 +21,13 @@ import java.io.IOException;
 
 /**
  * POST /upload : accepts a JSON configuration in the "config" form
- * field, rebuilds the agent graph, and returns the new graph as JSON.
- * Cyclic configurations are rejected.
+ * field, strictly validates it against ConfigDTO, rebuilds the agent graph, 
+ * and returns the new graph as JSON. Cyclic configurations are rejected.
  */
 public class ConfLoader extends BaseServlet {
+
+    // Instantiate Jackson mapper once per servlet lifecycle
+    private final ObjectMapper mapper = new ObjectMapper();
 
     @Override
     public HTTPResponse handle(HTTPRequest request) throws HTTPException {
@@ -31,6 +38,21 @@ public class ConfLoader extends BaseServlet {
         }
 
         String decodedText = URLDecoder.decode(configText, StandardCharsets.UTF_8);
+
+        try {
+            // This triggers all @JsonCreator constructors and throws exceptions on bad schema
+            mapper.readValue(decodedText, ConfigDTO.class);
+            
+        } catch (MismatchedInputException e) {
+            throw new HTTPException(HTTPStatus.BAD_REQUEST, "Invalid schema: Missing required fields or incorrect data types. " + e.getMessage());
+        } catch (ValueInstantiationException e) {
+            Throwable originalException = e.getCause();
+            String message = (originalException != null) ? originalException.getMessage() : e.getMessage();
+            throw new HTTPException(HTTPStatus.BAD_REQUEST, "Validation error: " + message);
+        } catch (Exception e) {
+            throw new HTTPException(HTTPStatus.BAD_REQUEST, "Malformed JSON syntax.");
+        }
+
         Path tempFilePath = null;
 
         try {
@@ -39,15 +61,12 @@ public class ConfLoader extends BaseServlet {
 
             GenericConfig config = new GenericConfig();
             config.setConfFile(tempFilePath.toString());
-            // Throws IllegalArgumentException if the JSON is malformed
-            // or if reflection fails (e.g., non-existent agent type)
             config.create();
 
             Graph graph = new Graph();
             graph.createFromTopics();
 
             if (graph.hasCycles()) {
-                // Rollback the corrupted state to prevent memory leaks or deadlocks
                 TopicManagerSingleton.get().clear();
                 throw new HTTPException(
                     HTTPStatus.BAD_REQUEST, 
@@ -58,7 +77,7 @@ public class ConfLoader extends BaseServlet {
             return sendJsonResponse(JsonGraphWriter.getGraphJSON(graph));
 
         } catch (IllegalArgumentException e) {
-            throw new HTTPException(HTTPStatus.BAD_REQUEST, "Invalid JSON format or schema: " + e.getMessage(), e);
+            throw new HTTPException(HTTPStatus.BAD_REQUEST, "Invalid graph creation: " + e.getMessage(), e);
             
         } catch (IOException e) {
             throw new HTTPException(HTTPStatus.INTERNAL_SERVER_ERROR, "Failed to process configuration file", e);

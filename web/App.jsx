@@ -3,7 +3,7 @@ import { ConfigDTO } from './dtos/ConfigDTO.js';
 import { Network } from 'vis-network';
 import { DataSet } from 'vis-data';
 
-// ENHANCED API SERVICE
+// API SERVICE
 const handleApiError = async (res) => {
   if (!res.ok) {
     let errorText = "An unexpected server error occurred.";
@@ -45,11 +45,15 @@ const ApiService = {
   resetGraph: async () => {
     const res = await fetch('/reset', { method: 'POST' });
     return handleApiError(res);
+  },
+  clearGraph: async () => {
+    const res = await fetch('/clear', { method: 'POST' });
+    return handleApiError(res);
   }
 };
 
 // SUB COMPONENTS
-const ControlPanel = ({ onDeploy, onPublish, onReset, onError }) => {
+const ControlPanel = ({ onDeploy, onPublish, onReset, onClear, onError }) => {
   const [topic, setTopic] = useState('');
   const [message, setMessage] = useState('');
   const [selectedFile, setSelectedFile] = useState(null);
@@ -103,7 +107,7 @@ const ControlPanel = ({ onDeploy, onPublish, onReset, onError }) => {
 
   const handleClearGraph = async () => {
     try {
-      await onDeploy('{"agents": []}');
+      await onClear();
       setSelectedFile(null);
       setJsonSnippet('');
       setIsDeployed(true);
@@ -307,6 +311,16 @@ export default function App() {
     }
   };
 
+  const handleClear = async () => {
+    try {
+      const data = await ApiService.clearGraph();
+      updateGraph(data);
+    } catch (err) {
+      triggerError(err.message);
+      throw err;
+    }
+  };
+
   const handlePublish = async (topic, msg) => {
     try {
       const data = await ApiService.publishMessage(topic, msg);
@@ -329,7 +343,7 @@ export default function App() {
 
   return (
     <div className="container">
-      <ControlPanel onDeploy={handleDeploy} onPublish={handlePublish} onReset={handleReset} onError={triggerError} />
+      <ControlPanel onDeploy={handleDeploy} onPublish={handlePublish} onReset={handleReset} onClear={handleClear} onError={triggerError} />
       
       <div className="graph-container">
         <div ref={containerRef} className="graph" />
