@@ -128,6 +128,8 @@ Before starting the Java server, you must compile the React frontend:
 4. Open a browser at <http://localhost:8080/app>.
 5. Press **Enter** in the terminal where the server is running to stop it.
 
+> **Note:** This app can be run using Docker containers. For more details, see the [Containerization](#containerization) section.
+
 ---
 
 ## How to Use the Web UI
@@ -216,11 +218,15 @@ curl "http://localhost:8080/publish?topic=A&message=3"
 ### `POST /reset`
 Resets every agent's internal state and publishes `"0"` on every topic.
 
+```bash
+curl -X POST http://localhost:8080/reset
+```
+
 ### `POST /clear`
 Deletes the graph and every topic.
 
 ```bash
-curl -X POST http://localhost:8080/reset
+curl -X POST http://localhost:8080/clear
 ```
 
 ### `GET /app/`
