@@ -65,7 +65,8 @@ Before starting the Java server, you must compile the React frontend:
 > 4. Open a browser at <http://localhost:8080/app>.
 > 5. Press **Enter** in the terminal where the server is running to stop it.
 
-> **Note:** This app can be run using Docker containers. For more details, see the [Containerization](#containerization) section.
+> [!NOTE]
+> This app can be run using Docker containers. For more details, see the [Containerization](#containerization) section.
 
 ---
 
