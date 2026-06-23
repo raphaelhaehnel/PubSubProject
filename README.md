@@ -6,53 +6,11 @@ It implements a full server with a backend implementing a computational graph, a
 
 The backend implements a **publisher-subscriber** mechanism: publishers can publish messages to specific topics, and subscribers can subscribe to these topics to automatically get new published messages. The agents that perform the computations form a directed graph that the user can visualize and interact with in the browser.
 
-<img width="1919" height="913" alt="app-screenshot" src="src/main/resources/app-screenshot.png" />
+<img width="1897" height="925" alt="app-screenshot" src="src/main/resources/app-screenshot.png" />
 
 ---
 
-## Testing & Quality Assurance
-
-We have implemented a comprehensive test suite using **JUnit 5/Mockito** for the backend and **Vitest** for the frontend to ensure robust code quality across the entire stack.
-
-### Backend Testing
-Our backend strategy rigorously validates the core logic, thread safety, and end-to-end functionality:
-
-- **Unit Tests:** Individual logic verification for all agents (including edge cases like division-by-zero and NaN handling), message parsing, and configuration loading.
-- **Integration Tests:** Verifying multi-agent graph flows, cycle detection algorithms, and end-to-end HTTP request routing.
-- **Stress & Concurrency Testing:** Simulating high-load multi-threaded environments to ensure the `TopicManager` and `ParallelAgent` executions are completely thread-safe and free of race conditions.
-- **Edge-Case API Testing:** Ensuring the server safely catches bad JSON payloads, handles missing nodes, and correctly translates them into proper HTTP response codes (400, 404, 500).
-
-**How to run backend tests:**
-From the project root directory, run:
-```bash
-mvn clean test
-```
-
-Or, if using an IDE like **IntelliJ IDEA** or **VS Code**, you can navigate to the `src/test/java` directory and run the entire test suite directly through the IDE's built-in Test Runner.
-
-### Frontend Testing
-To ensure the stability of our "Fail-Fast" architecture, we use **Vitest** to unit test the client-side DTOs. This ensures that configuration validation logic is correct before any network request is ever made.
-
-- **DTO Validation Tests:** We specifically target `ConfigDTO` and `AgentDTO` to verify they correctly identify invalid JSON syntax, missing mandatory fields (like `agents`, `subs`, `pubs`), and incorrect data types.
-
-**How to run frontend tests:**
-1. Navigate to the `web` directory:
-   ```bash
-   cd web
-   ```
-2. Install the test dependencies (if not already installed):
-   ```bash
-   npm install -D vitest
-   ```
-3. Run the tests:
-   ```bash
-   npm run test
-   ```
-*Note: Vitest runs in "watch mode" by default. Use `npx vitest run` if you prefer a single-execution run (e.g., for CI/CD pipelines).*
-
----
-
-## Features & Server Scope
+## Features
 
 - A minimal **HTTP server** written from scratch using `java.net.Socket`, with a small servlet API and a fixed-size worker thread pool.
 - A **publisher-subscriber** core: topics, messages, agents, and a thread-safe `TopicManager` singleton.
@@ -68,27 +26,6 @@ To ensure the stability of our "Fail-Fast" architecture, we use **Vitest** to un
 - A **generic configuration loader** that builds the agent graph from a JSON file, using Java reflection.
 - **Robust Error Handling & Rollbacks:** The server safely catches bad configurations. If a syntactically valid JSON introduces a cyclic dependency, the server rejects it and triggers an automatic rollback (clearing the corrupted state from the `TopicManager`) to prevent memory leaks and deadlocks.
 - A **graph view**: every topic / agent is shown as a node, with the latest message displayed under the node name.
-
----
-
-## End-to-End Validation & "Fail-Fast" Architecture
-
-To ensure strict client-server stability, the project implements a shared architectural boundary between the frontend and backend using **Data Transfer Objects (DTOs)**.
-
-- **Frontend Scope (Fail-Fast):** Before making network requests, the React application intercepts user inputs and instantiates client-side DTOs (`ConfigDTO`, `AgentDTO`). These classes act as strict schema validators. They ensure the uploaded file has a `.json` extension, contains syntactically valid JSON, and possesses all mandatory fields (`agents`, `type`, `subs`, `pubs`). If validation fails, an error is thrown locally, preventing garbage data from ever crossing the network.
-- **Mutual DTO Mapping:** The client-side DTOs strictly mirror the expected Java configuration objects. This creates a predictable API contract where the frontend knows exactly what the backend expects.
-- **Server Scope (The Gatekeeper):** The Java backend acts as the ultimate authority. It parses the incoming configuration using Jackson. If the syntax is malformed, or an invalid agent type is referenced via reflection, the server intercepts the `IllegalArgumentException` and gracefully returns a `400 Bad Request`. Additionally, the API intercepts missing topics (e.g., trying to publish to a node that doesn't exist) and cleanly returns a `404 Not Found`.
-
----
-
-## Architectural Notes (Deviations from Base Spec)
-
-With permission, this project elevates the base requirements to meet modern industry standards, specifically transitioning from an older Server-Side Rendering (SSR) architecture to a decoupled RESTful API and Single Page Application (SPA):
-
-- **Modern Web UI (React vs. iFrames):** Instead of using 3 static `iframe` tags, the frontend is built as a unified React application (`web` directory). It provides a seamless, dynamic user experience without full-page reloads, utilizing `vis-network`'s advanced repulsion physics for clean graph rendering.
-- **RESTful JSON API vs. HTML Servlets:** To ensure strict Client-Server decoupling, the `TopicDisplayer` and `ConfLoader` servlets return `application/json` payloads rather than rendering raw HTML strings. 
-- **Graceful Error UI:** Instead of crashing or showing raw server logs, the frontend parses custom HTTP error responses (400, 404, etc.) and displays them using a sleek, disposable Toast notification with an animated CSS progress bar.
-- **Static Resource Serving:** The server includes a dedicated `StaticResourceServlet` mapped to `/app/` that securely serves the compiled React assets (JS, CSS, HTML) while strictly preventing directory traversal attacks.
 
 ---
 
@@ -112,27 +49,27 @@ Before starting the Java server, you must compile the React frontend:
 2. Run `npm install` to install the frontend dependencies.
 3. Run `npm run build` to compile the app. This generates the `dist` folder inside `web` that the Java server uses.
 
-### 2. Run the Java Server (IntelliJ IDEA)
+### 2. Run the Java Server
 
-1. Open the project in IntelliJ.
-2. Let Maven download the dependencies (`jackson-databind`).
-3. Run `Main.java`.
-4. Open a browser at <http://localhost:8080/app>.
-5. Press **Enter** in the terminal where the server is running to stop it.
+#### IntelliJ IDEA
+> 1. Open the project in IntelliJ.
+> 2. Let Maven download the dependencies (`jackson-databind`).
+> 3. Run `Main.java`.
+> 4. Open a browser at <http://localhost:8080/app>.
+> 5. Press **Enter** in the terminal where the server is running to stop it.
 
-### 3. Run the Java Server (Visual Studio Code)
-
-1. Open the project folder in VS Code (ensure you have the **Extension Pack for Java** installed).
-2. Let the Java extension sync the project and download Maven dependencies (`jackson-databind`).
-3. Open `src/main/java/Main.java` and click the **Run** button (code lens) above the `main` method, or press `F5`.
-4. Open a browser at <http://localhost:8080/app>.
-5. Press **Enter** in the terminal where the server is running to stop it.
+#### Visual Studio Code
+> 1. Open the project folder in VS Code (ensure you have the **Extension Pack for Java** installed).
+> 2. Let the Java extension sync the project and download Maven dependencies (`jackson-databind`).
+> 3. Open `src/main/java/Main.java` and click the **Run** button (code lens) above the `main` method, or press `F5`.
+> 4. Open a browser at <http://localhost:8080/app>.
+> 5. Press **Enter** in the terminal where the server is running to stop it.
 
 > **Note:** This app can be run using Docker containers. For more details, see the [Containerization](#containerization) section.
 
 ---
 
-## How to Use the Web UI
+## Usage
 
 The main page is split into three columns:
 - **Left** — Upload a JSON configuration and publish messages to topics.
@@ -187,6 +124,59 @@ A configuration describes a list of agents to instantiate. Each agent has:
 - An agent only computes / publishes once it has received at least one value on each of its input topics.
 - The graph must **not contain a cycle** — the server rejects cyclic configurations.
 - For `PlusAgent` / `MulAgent` / `AvgAgent`, if the same topic name appears more than once in `subs`, it counts multiple times.
+
+---
+
+## Architectural Notes (Deviations from Base Spec)
+
+We did made a few modifications and improvements from the base requirements:
+
+- **Modern Web UI (React vs. iFrames):** Instead of using 3 static `iframe` tags, the frontend is built as a unified React application (`web` directory). It provides a seamless, dynamic user experience without full-page reloads, utilizing `vis-network`'s advanced repulsion physics for clean graph rendering.
+- **RESTful JSON API vs. HTML Servlets:** To ensure strict Client-Server decoupling, the `TopicDisplayer` and `ConfLoader` servlets return `application/json` payloads rather than rendering raw HTML strings.
+- **Graceful Error UI:** Instead of crashing or showing raw server logs, the frontend parses custom HTTP error responses (400, 404, etc.) and displays them using a sleek, disposable Toast notification with an animated CSS progress bar.
+- **Static Resource Serving:** The server includes a dedicated `StaticResourceServlet` mapped to `/app/` that securely serves the compiled React assets (JS, CSS, HTML) while strictly preventing directory traversal attacks.
+
+---
+
+## Tests
+
+We have implemented a comprehensive test suite using **JUnit 5/Mockito** for the backend and **Vitest** for the frontend to ensure robust code quality across the entire stack.
+
+### Backend Testing
+Our backend strategy rigorously validates the core logic, thread safety, and end-to-end functionality:
+
+- **Unit Tests:** Individual logic verification for all agents (including edge cases like division-by-zero and NaN handling), message parsing, and configuration loading.
+- **Integration Tests:** Verifying multi-agent graph flows, cycle detection algorithms, and end-to-end HTTP request routing.
+- **Stress & Concurrency Testing:** Simulating high-load multi-threaded environments to ensure the `TopicManager` and `ParallelAgent` executions are completely thread-safe and free of race conditions.
+- **Edge-Case API Testing:** Ensuring the server safely catches bad JSON payloads, handles missing nodes, and correctly translates them into proper HTTP response codes (400, 404, 500).
+
+**How to run backend tests:**
+From the project root directory, run:
+```bash
+mvn clean test
+```
+
+Or, if using an IDE like **IntelliJ IDEA** or **VS Code**, you can navigate to the `src/test/java` directory and run the entire test suite directly through the IDE's built-in Test Runner.
+
+### Frontend Testing
+To ensure the stability of our "Fail-Fast" architecture, we use **Vitest** to unit test the client-side DTOs. This ensures that configuration validation logic is correct before any network request is ever made.
+
+- **DTO Validation Tests:** We specifically target `ConfigDTO` and `AgentDTO` to verify they correctly identify invalid JSON syntax, missing mandatory fields (like `agents`, `subs`, `pubs`), and incorrect data types.
+
+**How to run frontend tests:**
+1. Navigate to the `web` directory:
+   ```bash
+   cd web
+   ```
+2. Install the test dependencies (if not already installed):
+   ```bash
+   npm install -D vitest
+   ```
+3. Run the tests:
+   ```bash
+   npm run test
+   ```
+*Note: Vitest runs in "watch mode" by default. Use `npx vitest run` if you prefer a single-execution run (e.g., for CI/CD pipelines).*
 
 ---
 
