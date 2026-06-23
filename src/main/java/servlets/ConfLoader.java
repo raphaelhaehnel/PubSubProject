@@ -6,7 +6,7 @@ import com.fasterxml.jackson.databind.exc.ValueInstantiationException;
 import graph.GenericConfig;
 import graph.Graph;
 import graph.TopicManagerSingleton;
-import servlets.dtos.ConfigDTO;
+import servlets.dtos.Config;
 import server.dtos.HTTPRequest;
 import server.dtos.HTTPResponse;
 import server.enums.HTTPStatus;
@@ -41,7 +41,7 @@ public class ConfLoader extends BaseServlet {
 
         try {
             // This triggers all @JsonCreator constructors and throws exceptions on bad schema
-            mapper.readValue(decodedText, ConfigDTO.class);
+            mapper.readValue(decodedText, Config.class);
             
         } catch (MismatchedInputException e) {
             throw new HTTPException(HTTPStatus.BAD_REQUEST, "Invalid schema: Missing required fields or incorrect data types. " + e.getMessage());

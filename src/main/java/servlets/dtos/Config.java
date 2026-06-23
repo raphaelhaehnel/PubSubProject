@@ -4,21 +4,21 @@ import com.fasterxml.jackson.annotation.JsonCreator;
 import com.fasterxml.jackson.annotation.JsonProperty;
 import java.util.List;
 
-import servlets.dtos.AgentDTO;
+import servlets.dtos.Agent;
 
 
-public class ConfigDTO {
-    private final List<AgentDTO> agents;
+public class Config {
+    private final List<Agent> agents;
 
     @JsonCreator
-    public ConfigDTO(@JsonProperty(value = "agents", required = true) List<AgentDTO> agents) {
+    public Config(@JsonProperty(value = "agents", required = true) List<Agent> agents) {
         if (agents == null || agents.isEmpty()) {
             throw new IllegalArgumentException("The 'agents' array cannot be missing or empty.");
         }
         this.agents = agents;
     }
 
-    public List<AgentDTO> getAgents() {
+    public List<Agent> getAgents() {
         return agents;
     }
 }
