@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { ConfigDTO } from './dtos/ConfigDTO.js';
+import { ConfigDTO } from './dtos/Config.js';
 import { Network } from 'vis-network';
 import { DataSet } from 'vis-data';
 

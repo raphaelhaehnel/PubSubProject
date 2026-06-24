@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest';
-import { ConfigDTO } from './ConfigDTO.js';
+import { ConfigDTO } from './Config.js';
 
 describe('ConfigDTO Validation', () => {
   it('should parse a valid JSON configuration successfully', () => {
