@@ -1,5 +1,21 @@
 # Pub-Sub Project
 
+<!-- TOC -->
+* [Pub-Sub Project](#pub-sub-project)
+    * [Features](#features)
+    * [Requirements](#requirements)
+    * [How to Run](#how-to-run)
+    * [Usage](#usage)
+    * [Configuration JSON Format](#configuration-json-format)
+    * [Architectural Notes (Deviations from Base Spec)](#architectural-notes-deviations-from-base-spec)
+    * [Tests](#tests)
+    * [HTTP API](#http-api)
+    * [Server-Side Error Handling & HTTP Entities](#server-side-error-handling--http-entities)
+    * [Project Layout](#project-layout)
+    * [Containerization](#containerization)
+    * [Writing Your Own Agent](#writing-your-own-agent)
+<!-- TOC -->
+
 This project was done during the course **"Advanced Programming"** with Prof. Eliahu Khalastchi, Bar-Ilan University, 2026, second semester.
 
 It implements a full server with a backend implementing a computational graph, an HTTP API, and a web frontend.
