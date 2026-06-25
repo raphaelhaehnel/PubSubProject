@@ -1,21 +1,5 @@
 # Pub-Sub Project
 
-<!-- TOC -->
-* [Pub-Sub Project](#pub-sub-project)
-    * [Features](#features)
-    * [Requirements](#requirements)
-    * [How to Run](#how-to-run)
-    * [Usage](#usage)
-    * [Configuration JSON Format](#configuration-json-format)
-    * [Architectural Notes (Deviations from Base Spec)](#architectural-notes-deviations-from-base-spec)
-    * [Tests](#tests)
-    * [HTTP API](#http-api)
-    * [Server-Side Error Handling & HTTP Entities](#server-side-error-handling--http-entities)
-    * [Project Layout](#project-layout)
-    * [Containerization](#containerization)
-    * [Writing Your Own Agent](#writing-your-own-agent)
-<!-- TOC -->
-
 This project was done during the course **"Advanced Programming"** with Prof. Eliahu Khalastchi, Bar-Ilan University, 2026, second semester.
 
 It implements a full server with a backend implementing a computational graph, an HTTP API, and a web frontend.
@@ -23,6 +7,26 @@ It implements a full server with a backend implementing a computational graph, a
 The backend implements a **publisher-subscriber** mechanism: publishers can publish messages to specific topics, and subscribers can subscribe to these topics to automatically get new published messages. The agents that perform the computations form a directed graph that the user can visualize and interact with in the browser.
 
 <img width="1897" height="925" alt="app-screenshot" src="src/main/resources/app-screenshot.png" />
+
+---
+
+## Table of contents
+
+<!-- TOC -->
+* [Pub-Sub Project](#pub-sub-project)
+  * [Features](#features)
+  * [Requirements](#requirements)
+  * [How to Run](#how-to-run)
+  * [Usage](#usage)
+  * [Configuration JSON Format](#configuration-json-format)
+  * [Architectural Notes (Deviations from Base Spec)](#architectural-notes-deviations-from-base-spec)
+  * [Tests](#tests)
+  * [HTTP API](#http-api)
+  * [Server-Side Error Handling & HTTP Entities](#server-side-error-handling--http-entities)
+  * [Project Layout](#project-layout)
+  * [Containerization](#containerization)
+  * [Writing Your Own Agent](#writing-your-own-agent)
+<!-- TOC -->
 
 ---
 
