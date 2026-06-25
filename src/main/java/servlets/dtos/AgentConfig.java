@@ -4,7 +4,7 @@ import com.fasterxml.jackson.annotation.JsonCreator;
 import com.fasterxml.jackson.annotation.JsonProperty;
 import java.util.List;
 
-public record AgentConfig(String type, List<String> pubs, List<String> subs) {
+record AgentConfig(String type, List<String> pubs, List<String> subs) {
     @JsonCreator
     public AgentConfig(
             @JsonProperty(value = "type", required = true) String type,
