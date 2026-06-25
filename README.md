@@ -34,6 +34,7 @@ The backend implements a **publisher-subscriber** mechanism: publishers can publ
 - Java 17 or higher
 - Maven (for dependency management; only `jackson-databind` is used)
 - Node.js and npm (to build the React frontend)
+- Docker Desktop (not mandatory - if you want to use containerization)
 - A web browser (Chrome recommended)
 - An internet connection (the Vis.js library used by the frontend is loaded from an external server)
 
