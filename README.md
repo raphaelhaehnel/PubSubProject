@@ -287,32 +287,8 @@ Alternately, you can load our pre-built image and simply run:
 docker run -it --rm -p 8080:8080 saridga/biu-pubsub-app:latest
 ``` 
 
-### Run with Docker Compose (Pre-built Image)
-To pull the published image from Docker Hub and run it without building locally:
-```bash
-docker compose up
-```
-This pulls `saridga/biu-pubsub-app:latest` automatically if it isn't already cached on your machine. To stop and remove the container:
-```bash
-docker compose down
-```
-
-###  Build the Image Locally with Docker Compose
-To force Docker Compose to build the image from the local `Dockerfile` instead of pulling it:
-```bash
-docker compose up --build
-```
-This rebuilds the image from scratch every time the flag is passed, which is useful after making source code changes. To run in detached (background) mode:
-```bash
-docker compose up --build -d
-```
-To stop:
-```bash
-docker compose down
-```
-
 > [!NOTE]
-> All three options serve the app on port `8080`. Make sure no other process is occupying that port before starting the container. If you need a different port, change the left-hand side of the `ports` mapping in `docker-compose.yaml` (e.g., `"9090:8080"`).
+> App serving binds port `8080`. Make sure no other process is occupying that port before starting the container. If you need a different port, change the left-hand side of the `ports` mapping in `-p` argument (e.g., `-p "9090:8080"`).
 
 ---
 
