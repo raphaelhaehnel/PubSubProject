@@ -282,6 +282,11 @@ docker run -it --rm -p 8080:8080 pubsub-app
 Then open your browser at http://localhost:8080/app.
 Press Ctrl+C in the terminal to stop the container.
 
+Alternately, you can load our pre-built image and simply run:
+```bash
+docker run -it --rm -p 8080:8080 saridga/biu-pubsub-app:latest
+``` 
+
 ### Run with Docker Compose (Pre-built Image)
 To pull the published image from Docker Hub and run it without building locally:
 ```bash
