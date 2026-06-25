@@ -4,6 +4,7 @@ import servlets.ConfLoader;
 import servlets.GraphDisplayer;
 import servlets.StaticResourceServlet;
 import servlets.ResetServlet;
+import servlets.ClearServlet;
 import servlets.TopicDisplayer;
 
 
@@ -21,11 +22,13 @@ public class Main {
         // POST /upload   -> upload a JSON configuration
         // GET  /graph    -> get the current graph as JSON
         // POST /reset    -> reset every agent and set every topic to 0
+        // POST /clear    -> delete all topics and agents
         // GET  /app      -> serve the front-end (HTML/CSS/JS)
         server.addServlet("GET", "/publish", new TopicDisplayer());
         server.addServlet("POST", "/upload", new ConfLoader());
         server.addServlet("GET", "/graph", new GraphDisplayer());
         server.addServlet("POST", "/reset", new ResetServlet());
+        server.addServlet("POST", "/clear", new ClearServlet());
         server.addServlet("GET", "/app", new StaticResourceServlet("web/dist"));
 
         server.start();

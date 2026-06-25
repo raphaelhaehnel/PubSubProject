@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest';
-import { AgentDTO } from './AgentDTO.js';
+import { AgentDTO } from './Agent.js';
 
 describe('AgentDTO Validation', () => {
   it('should create a valid AgentDTO when all fields are present', () => {

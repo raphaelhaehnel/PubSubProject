@@ -1,4 +1,4 @@
-import { AgentDTO } from './AgentDTO.js';
+import { AgentDTO } from './Agent.js';
 
 export class ConfigDTO {
   constructor(jsonString) {

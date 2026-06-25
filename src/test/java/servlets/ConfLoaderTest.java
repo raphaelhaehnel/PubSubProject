@@ -1,73 +1,115 @@
 package servlets;
 
-import graph.TopicManagerSingleton;
-import org.junit.jupiter.api.BeforeEach;
+import java.util.HashMap;
+import java.util.Map;
+import java.net.URLEncoder;
+import java.nio.charset.StandardCharsets;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.Arguments;
+import org.junit.jupiter.params.provider.MethodSource;
 import org.mockito.Mockito;
 import server.dtos.HTTPRequest;
+import server.dtos.HTTPResponse;
 import server.enums.HTTPStatus;
 import server.exceptions.HTTPException;
 
-import java.util.HashMap;
-import java.util.Map;
+import java.util.stream.Stream;
 
 import static org.junit.jupiter.api.Assertions.*;
 import static org.mockito.Mockito.when;
 
 class ConfLoaderTest {
 
-    private ConfLoader confLoader;
-
-    @BeforeEach
-    void setUp() {
-        confLoader = new ConfLoader();
-        TopicManagerSingleton.get().clear();
+    /**
+     * THE DATA SOURCE: This acts just like pytest.mark.parametrize.
+     * It provides the payload and a description for the test logs.
+     */
+    private static Stream<Arguments> provideBadPayloads() {
+        return Stream.of(
+            // 1. Empty Input
+            Arguments.of("", "Empty input"),
+            
+            // 2. Invalid JSON Syntax
+            Arguments.of("{\"agents\": [{", "Missing closing braces"),
+            Arguments.of("{agents: []}", "Illegal key without quotes"),
+            Arguments.of("{\"agents\": [{\"name\": \"A1\",}]}", "Trailing comma in array"),
+            
+            // 3. Valid JSON, missing "agents" array completely
+            Arguments.of("{}", "Valid empty JSON"),
+            Arguments.of("{\"nodes\": []}", "Missing 'agents' root key"),
+            
+            // 4. Valid JSON, but "agents" array is empty
+            Arguments.of("{\"agents\": []}", "Empty 'agents' array"),
+            
+            // 5. Invalid Agent structures (Missing mandatory fields)
+            Arguments.of("{\"agents\": [{\"pubs\": [\"Topic1\"]}]}", "Agent missing 'type'"),
+            Arguments.of("{\"agents\": [{\"type\": \"A1\"}]}", "Agent missing 'pubs' and 'subs' arrays"),
+            
+            // 6. Graph with Cycles 
+            // Agent A publishes T1 and subscribes T2. Agent B subscribes T1 and publishes T2.
+            Arguments.of("{\"agents\": [" +
+                    "{\"type\": \"IncAgent\", \"subs\": [\"LoopTopic1\"], \"pubs\": [\"LoopTopic2\"]}, " +
+                    "{\"type\": \"IncAgent\", \"subs\": [\"LoopTopic2\"], \"pubs\": [\"LoopTopic1\"]}" +
+                    "]}", "Cyclic graph detected")
+        );
     }
 
-    @Test
-    void testHandleReturns400OnInvalidJson() {
+    /**
+     * THE NEGATIVE TEST RUNNER
+     * The `name` parameter formats the test output so you know exactly which case failed.
+     */
+    @ParameterizedTest(name = "[{index}] {1}")
+    @MethodSource("provideBadPayloads")
+    void testUploadInvalidConfigurationsThrowsBadRequest(String payload, String description) throws Exception {
+        // Arrange
         HTTPRequest mockRequest = Mockito.mock(HTTPRequest.class);
-        Map<String, String> params = new HashMap<>();
+        when(mockRequest.getHttpCommand()).thenReturn("POST");
         
-        // Simulating user inputting garbage data instead of valid JSON
-        params.put("config", "{ invalid_json ]");
-        when(mockRequest.getParameters()).thenReturn(params);
+        Map<String, String> mockParams = new HashMap<>();
+        mockParams.put("config", URLEncoder.encode(payload, StandardCharsets.UTF_8)); // Use 'validPayload' in the Happy Path
+        when(mockRequest.getParameters()).thenReturn(mockParams);
 
-        HTTPException exception = assertThrows(HTTPException.class, () -> confLoader.handle(mockRequest));
-        
-        assertEquals(HTTPStatus.BAD_REQUEST, exception.getStatus(), "Server should return 400 for bad JSON syntax.");
-        assertTrue(exception.getMessage().contains("Invalid JSON format"), "Exception should mention invalid JSON format.");
+        ConfLoader confLoader = new ConfLoader();
+
+        // Act & Assert
+        HTTPException exception = assertThrows(HTTPException.class, () -> {
+            confLoader.handle(mockRequest);
+        }, "Expected exception was not thrown for: " + description);
+
+        // Verify it specifically throws a 400 Bad Request
+        assertEquals(HTTPStatus.BAD_REQUEST, exception.getStatus(), 
+            "Wrong status code for: " + description);
     }
 
+    /**
+     * THE HAPPY PATH TEST
+     * Verifies that a perfectly valid JSON configuration returns a 200 OK.
+     */
     @Test
-    void testHandleReturns400AndRollsBackOnCyclicGraph() {
-        HTTPRequest mockRequest = Mockito.mock(HTTPRequest.class);
-        Map<String, String> params = new HashMap<>();
-        
-        // A perfectly valid JSON syntax, but logically contains a cycle (C -> A and A -> C)
-        String cyclicJson = """
-        {
-            "agents": [
-                {
-                    "type": "PlusAgent",
-                    "subs": ["A", "B"],
-                    "pubs": ["C"]
-                },
-                {
-                    "type": "IncAgent",
-                    "subs": ["C"],
-                    "pubs": ["A"]
-                }
-            ]
-        }
-        """;
-        
-        params.put("config", cyclicJson);
-        when(mockRequest.getParameters()).thenReturn(params);
+    void testUploadValidConfigurationReturns200() throws Exception {
+        // Arrange
+        // FIX: Added the "type" field to both agents so Jackson validates them properly
+        String validPayload = "{\"agents\": [" +
+                "{\"type\": \"MulAgent\", \"pubs\": [\"NewsTopic\"], \"subs\": []}, " +
+                "{\"type\": \"IncAgent\", \"pubs\": [], \"subs\": [\"NewsTopic\"]}" +
+                "]}";
 
-        HTTPException exception = assertThrows(HTTPException.class, () -> confLoader.handle(mockRequest));
+        HTTPRequest mockRequest = Mockito.mock(HTTPRequest.class);
+        when(mockRequest.getHttpCommand()).thenReturn("POST");
         
-        assertEquals(HTTPStatus.BAD_REQUEST, exception.getStatus(), "Server should reject cyclic graphs with a 400 status.");
-        assertTrue(exception.getMessage().toLowerCase().contains("cycles"), "Exception message should indicate a cycle was found.");
+        Map<String, String> mockParams = new HashMap<>();
+        mockParams.put("config", java.net.URLEncoder.encode(validPayload, java.nio.charset.StandardCharsets.UTF_8)); 
+        when(mockRequest.getParameters()).thenReturn(mockParams);
+
+        ConfLoader confLoader = new ConfLoader();
+
+        // Act
+        HTTPResponse response = confLoader.handle(mockRequest);
+
+        // Assert
+        assertNotNull(response, "Response should not be null");
+        assertEquals(HTTPStatus.OK, response.getStatus(), 
+            "Valid configuration should return 200 OK");
     }
 }
