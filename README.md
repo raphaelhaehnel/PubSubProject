@@ -10,6 +10,26 @@ The backend implements a **publisher-subscriber** mechanism: publishers can publ
 
 ---
 
+## Table of contents
+
+<!-- TOC -->
+* [Pub-Sub Project](#pub-sub-project)
+  * [Features](#features)
+  * [Requirements](#requirements)
+  * [How to Run](#how-to-run)
+  * [Usage](#usage)
+  * [Configuration JSON Format](#configuration-json-format)
+  * [Architectural Notes (Deviations from Base Spec)](#architectural-notes-deviations-from-base-spec)
+  * [Tests](#tests)
+  * [HTTP API](#http-api)
+  * [Server-Side Error Handling & HTTP Entities](#server-side-error-handling--http-entities)
+  * [Project Layout](#project-layout)
+  * [Containerization](#containerization)
+  * [Writing Your Own Agent](#writing-your-own-agent)
+<!-- TOC -->
+
+---
+
 ## Features
 
 - A minimal **HTTP server** written from scratch using `java.net.Socket`, with a small servlet API and a fixed-size worker thread pool.
