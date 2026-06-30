@@ -14,6 +14,7 @@ The backend implements a **publisher-subscriber** mechanism: publishers can publ
 
 <!-- TOC -->
 * [Pub-Sub Project](#pub-sub-project)
+  * [Demo Video](#demo-video)
   * [Features](#features)
   * [Requirements](#requirements)
   * [How to Run](#how-to-run)
@@ -27,6 +28,14 @@ The backend implements a **publisher-subscriber** mechanism: publishers can publ
   * [Containerization](#containerization)
   * [Writing Your Own Agent](#writing-your-own-agent)
 <!-- TOC -->
+
+---
+
+## Demo Video
+
+Watch the video below for a complete explanation and demonstration of the project:
+
+[![Pub-Sub Project Explanation](https://img.youtube.com/vi/jKfB-NkG2l4/0.jpg)](https://youtu.be/jKfB-NkG2l4)
 
 ---
 
