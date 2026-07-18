@@ -14,6 +14,13 @@ import servlets.TopicDisplayer;
  */
 public class Main {
 
+    /**
+     * Starts the HTTP server on port 8080, registers every endpoint, and blocks until the
+     * user presses Enter, then shuts the server down.
+     *
+     * @param args command-line arguments (unused)
+     * @throws Exception if the server fails to start or blocking on {@code System.in} fails
+     */
     public static void main(String[] args) throws Exception {
 
         HTTPServer server = new MyHTTPServer(8080, 5);

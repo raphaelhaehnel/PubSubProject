@@ -10,6 +10,10 @@ import java.util.concurrent.ConcurrentHashMap;
  */
 public class TopicManagerSingleton {
 
+    /**
+     * The thread-safe registry of every {@link Topic}, backed by a {@link ConcurrentHashMap}.
+     * Accessed through the enclosing class's {@link #get()} method.
+     */
     public static class TopicManager {
 
         private static final TopicManager instance = new TopicManager();
@@ -19,11 +23,17 @@ public class TopicManagerSingleton {
         private TopicManager() {
         }
 
-        /** Returns the matching topic, creating it on the fly if it does not exist. */
+        /**
+         * Returns the matching topic, creating it on the fly if it does not exist.
+         *
+         * @param topicName the topic name
+         * @return the existing or newly created topic
+         */
         public Topic getTopic(String topicName) {
             return topics.computeIfAbsent(topicName, key -> new Topic(topicName));
         }
 
+        /** @return every topic currently registered */
         public Collection<Topic> getTopics() {
             return topics.values();
         }
@@ -36,6 +46,7 @@ public class TopicManagerSingleton {
 
     private TopicManagerSingleton() {}
 
+    /** @return the shared {@link TopicManager} instance */
     public static TopicManager get() {
         return TopicManager.instance;
     }

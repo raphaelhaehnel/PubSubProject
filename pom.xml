@@ -66,6 +66,27 @@
                 <groupId>org.apache.maven.plugins</groupId>
                 <artifactId>maven-surefire-plugin</artifactId>
                 <version>3.2.5</version>
+                <configuration>
+                    <!--
+                        Mockito uses Byte Buddy to instrument classes (e.g. to mock the
+                        HTTPRequest record). Byte Buddy rejects JDKs newer than it officially
+                        supports; this flag lets it proceed experimentally so the suite runs on
+                        newer JDKs (e.g. 23+). Harmless on the project's target Java 17.
+                    -->
+                    <argLine>-Dnet.bytebuddy.experimental=true</argLine>
+                </configuration>
+            </plugin>
+
+            <!-- Generates HTML Javadoc into target/site/apidocs via `mvn javadoc:javadoc`. -->
+            <plugin>
+                <groupId>org.apache.maven.plugins</groupId>
+                <artifactId>maven-javadoc-plugin</artifactId>
+                <version>3.6.3</version>
+                <configuration>
+                    <source>17</source>
+                    <!-- Report broken references/tags, but don't fail on undocumented members. -->
+                    <doclint>all,-missing</doclint>
+                </configuration>
             </plugin>
         </plugins>
     </build>

@@ -17,6 +17,14 @@ import java.util.Map;
  */
 public class JsonGraphWriter {
 
+    /**
+     * Serializes the graph to the Vis.js JSON format. Each node gets a numeric id, a label
+     * (its name without the {@code T}/{@code A} prefix, plus its latest value if any), and a
+     * color; each edge is rendered as a {@code from}/{@code to} id pair.
+     *
+     * @param graph the graph to serialize
+     * @return the JSON representation of the graph
+     */
     public static String getGraphJSON(Graph graph) {
         StringBuilder json = new StringBuilder();
 
@@ -79,6 +87,7 @@ public class JsonGraphWriter {
         return json.toString();
     }
 
+    /** Escapes double quotes and newlines so {@code s} can be embedded in a JSON string. */
     private static String escapeJson(String s) {
         return s.replace("\"", "\\\"")
                 .replace("\n", "\\n");

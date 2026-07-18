@@ -2,6 +2,7 @@ package server;
 
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.mockito.Mockito;
 import server.dtos.HTTPRequest;
@@ -18,6 +19,12 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.when;
 
+/**
+ * Integration tests for {@link MyHTTPServer}: routing to servlets (including longest-prefix
+ * matching), servlet registration/removal, and translation of errors into HTTP status codes.
+ * Each test runs against a real server instance listening on a local test port.
+ */
+@DisplayName("HTTP server routing and error handling")
 class HTTPServerTest {
 
     private MyHTTPServer server;
@@ -40,6 +47,7 @@ class HTTPServerTest {
     }
 
     @Test
+    @DisplayName("Unmapped URI returns 404")
     void testServerReturns404ForUnmappedUri() throws IOException {
         URL url = new URL("http://localhost:" + TEST_PORT + "/does-not-exist");
         HttpURLConnection connection = (HttpURLConnection) url.openConnection();
@@ -50,6 +58,7 @@ class HTTPServerTest {
     }
 
     @Test
+    @DisplayName("Requests route to the longest-prefix matching servlet")
     void testServerRoutesToMappedServletAndHandlesPrefixes() throws Exception {
         // Mock a servlet to return a basic 200 OK response
         Servlet mockServlet = Mockito.mock(Servlet.class);
@@ -76,6 +85,7 @@ class HTTPServerTest {
     }
 
     @Test
+    @DisplayName("A removed servlet no longer handles requests (404)")
     void testServerRemovesServletCorrectly() throws Exception {
         Servlet mockServlet = Mockito.mock(Servlet.class);
         HTTPResponse mockResponse = new HTTPResponse(HTTPStatus.valueOf("OK"), "text/plain", "MockResponse".getBytes());
@@ -97,6 +107,7 @@ class HTTPServerTest {
     }
 
     @Test
+    @DisplayName("HTTPException(400) becomes a 400 response")
     void testServerHandlesBadRequest400() throws Exception {
         Servlet mockServlet = Mockito.mock(Servlet.class);
         when(mockServlet.handle(any(HTTPRequest.class)))
@@ -113,6 +124,7 @@ class HTTPServerTest {
     }
 
     @Test
+    @DisplayName("HTTPException(403) becomes a 403 response")
     void testServerHandlesForbidden403() throws Exception {
         Servlet mockServlet = Mockito.mock(Servlet.class);
         when(mockServlet.handle(any(HTTPRequest.class)))
@@ -129,6 +141,7 @@ class HTTPServerTest {
     }
 
     @Test
+    @DisplayName("An unhandled exception becomes a 500 response")
     void testServerHandlesInternalServerError500() throws Exception {
         Servlet mockServlet = Mockito.mock(Servlet.class);
         // Throwing a generic RuntimeException to test the server's fallback error handling

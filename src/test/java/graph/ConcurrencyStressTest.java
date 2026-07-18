@@ -1,14 +1,21 @@
 package graph;
 
+import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.TimeUnit;
 import static org.junit.jupiter.api.Assertions.*;
 
+/**
+ * Stress tests verifying that {@link Topic} and the {@link TopicManagerSingleton.TopicManager}
+ * remain thread-safe under heavy concurrent publishing and clearing.
+ */
+@DisplayName("Concurrency stress tests")
 class ConcurrencyStressTest {
 
     @Test
+    @DisplayName("TopicManager stays stable under concurrent topic access")
     void testConcurrentTopicAccess() throws InterruptedException {
         int threadCount = 10;
         ExecutorService executor = Executors.newFixedThreadPool(threadCount);
@@ -29,6 +36,7 @@ class ConcurrencyStressTest {
     }
 
     @Test
+    @DisplayName("Clearing the manager while publishing does not throw")
     void testClearWhilePublishingRaceCondition() throws InterruptedException {
         int threadCount = 10;
         ExecutorService executor = Executors.newFixedThreadPool(threadCount);

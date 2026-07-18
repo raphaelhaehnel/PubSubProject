@@ -19,13 +19,26 @@ public class StaticResourceServlet extends BaseServlet {
 
     private final String baseDir;
 
+    /**
+     * @param baseDir the directory from which static files are served
+     */
     public StaticResourceServlet(String baseDir) {
         this.baseDir = baseDir;
     }
 
+    /**
+     * {@inheritDoc}
+     * <p>
+     * Serves the requested file from the base directory, mapping a bare {@code /app} to
+     * {@code index.html}.
+     *
+     * @throws HTTPException {@code 403} if the resolved path escapes the base directory
+     *         (path-traversal attempt), {@code 404} if the file does not exist, or
+     *         {@code 500} if the file cannot be read
+     */
     @Override
     public HTTPResponse handle(HTTPRequest request) throws HTTPException {
-        String uri = request.getResourceUri(); 
+        String uri = request.getResourceUri();
         String fileName = uri.replaceFirst("^/app/?", "");
 
         if (fileName.isEmpty() || fileName.equals("/")) {
@@ -55,7 +68,12 @@ public class StaticResourceServlet extends BaseServlet {
         }
     }
 
-    /** Picks a MIME type by file extension. Defaults to JSON. */
+    /**
+     * Picks a MIME type by file extension. Defaults to JSON when there is no extension.
+     *
+     * @param fileName the requested file name
+     * @return the matching MIME type
+     */
     private String getContentType(String fileName) {
         if (fileName == null || !fileName.contains(".")) {
             return ContentType.JSON.mimeType();
@@ -65,6 +83,7 @@ public class StaticResourceServlet extends BaseServlet {
         return ContentType.getMimeTypeForExtension(extension);
     }
 
+    /** {@inheritDoc} */
     @Override
     public void close() {}
 }

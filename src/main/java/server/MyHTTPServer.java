@@ -44,6 +44,12 @@ public class MyHTTPServer extends Thread implements HTTPServer {
     private ExecutorService executor;
 
 
+    /**
+     * Creates a server (without starting it) bound to the given port and worker-pool size.
+     *
+     * @param port       the TCP port to listen on
+     * @param maxThreads the number of worker threads used to handle requests
+     */
     public MyHTTPServer(int port, int maxThreads) {
         super("MyHTTPServer-MainThread");
         this.port = port;
@@ -56,6 +62,11 @@ public class MyHTTPServer extends Thread implements HTTPServer {
         this.executor = null;
     }
 
+    /**
+     * {@inheritDoc}
+     * <p>
+     * Unsupported HTTP methods are ignored (logged as a warning).
+     */
     @Override
     public void addServlet(String httpCommand, String uri, Servlet s) {
         Map<String, Servlet> servletMap = getServletMap(httpCommand.toUpperCase());
@@ -67,6 +78,11 @@ public class MyHTTPServer extends Thread implements HTTPServer {
         }
     }
 
+    /**
+     * {@inheritDoc}
+     * <p>
+     * The removed servlet is closed. Unsupported HTTP methods are ignored (logged as a warning).
+     */
     @Override
     public void removeServlet(String httpCommand, String uri) {
         Map<String, Servlet> servletMap = getServletMap(httpCommand.toUpperCase());
@@ -78,6 +94,12 @@ public class MyHTTPServer extends Thread implements HTTPServer {
         }
     }
 
+    /**
+     * {@inheritDoc}
+     * <p>
+     * Initializes the worker pool and starts the accept loop on a background thread, returning
+     * immediately. Does nothing if the server is already running.
+     */
     @Override
     public void start() {
         if (!running) {
@@ -91,6 +113,11 @@ public class MyHTTPServer extends Thread implements HTTPServer {
         }
     }
 
+    /**
+     * The server's main loop: opens the server socket and accepts client connections until
+     * the server is closed. Runs on the background thread started by {@link #start()}; not
+     * meant to be called directly.
+     */
     @Override
     public void run() {
         try (ServerSocket ss = createServerSocket()) {
@@ -106,6 +133,11 @@ public class MyHTTPServer extends Thread implements HTTPServer {
         }
     }
 
+    /**
+     * {@inheritDoc}
+     * <p>
+     * Stops the accept loop, closes every registered servlet, and shuts down the worker pool.
+     */
     @Override
     public void close() {
         logger.info("Server shutdown requested.");
@@ -186,6 +218,11 @@ public class MyHTTPServer extends Thread implements HTTPServer {
         }
     }
 
+    /**
+     * Parses one request, routes it to the matching servlet, and writes the response. Turns
+     * missing routes into {@code 404}, {@link HTTPException}s into their status, and any other
+     * failure into {@code 500}, so a well-formed JSON error is always returned.
+     */
     private void processClientRequest(BufferedReader br, OutputStream out) throws IOException {
         HTTPRequest ri;
         String requestIdentifier;
@@ -256,6 +293,7 @@ public class MyHTTPServer extends Thread implements HTTPServer {
         out.flush();
     }
 
+    /** Builds a JSON error response of the form {@code {"error": "..."}} for the given status. */
     private HTTPResponse createJsonErrorResponse(HTTPStatus status, String message) {
         String escapedMsg = message.replace("\"", "\\\"");
         String jsonBody = "{\"error\": \"" + escapedMsg + "\"}";

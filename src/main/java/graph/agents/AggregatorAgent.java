@@ -22,6 +22,13 @@ public abstract class AggregatorAgent implements Agent {
     protected final Double[] values;
     protected final TopicManager topicManager;
 
+    /**
+     * Subscribes to every input topic and registers as a publisher of {@code pubs[0]}.
+     * If {@code subs} is empty the agent wires nothing.
+     *
+     * @param subs the input topic names
+     * @param pubs the output topic names; only {@code pubs[0]} is published to
+     */
     protected AggregatorAgent(String[] subs, String[] pubs) {
         this.subs = subs;
         this.pubs = pubs;
@@ -44,19 +51,35 @@ public abstract class AggregatorAgent implements Agent {
     /**
      * Combines the latest values from every input into a single output.
      * Called only once every slot has been filled at least once.
+     *
+     * @param values the latest value of each input topic, in {@code subs} order
+     * @return the aggregated result to publish
      */
     protected abstract double aggregate(Double[] values);
 
+    /** {@inheritDoc} */
     @Override
     public String getName() {
         return getClass().getSimpleName();
     }
 
+    /**
+     * {@inheritDoc}
+     * <p>
+     * Resets every stored input value to {@code 0.0}.
+     */
     @Override
     public void reset() {
         Arrays.fill(values, 0.0);
     }
 
+    /**
+     * {@inheritDoc}
+     * <p>
+     * Stores the value on every matching input slot (so a topic listed more than once
+     * counts each time), and publishes {@link #aggregate(Double[])} once every input has
+     * received at least one value. Non-numeric messages are ignored.
+     */
     @Override
     public void callback(String topic, Message msg) {
         double messageValue = msg.asDouble;
@@ -92,6 +115,7 @@ public abstract class AggregatorAgent implements Agent {
         }
     }
 
+    /** {@inheritDoc} */
     @Override
     public void close() {
         for (String s : subs) {

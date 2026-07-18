@@ -1,5 +1,6 @@
 package server;
 
+import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import server.dtos.HTTPRequest;
 
@@ -9,9 +10,15 @@ import java.io.StringReader;
 
 import static org.junit.jupiter.api.Assertions.*;
 
+/**
+ * Unit tests for {@link RequestParser}: parsing the request line, headers, query-string and
+ * form-body parameters, and its handling of malformed input (empty request, bad Content-Length).
+ */
+@DisplayName("HTTP request parser")
 class RequestParserTest {
 
     @Test
+    @DisplayName("Parses a GET request line, URI, and query parameters")
     void testParseValidGetRequest() throws IOException {
         String rawRequest = "GET /api/data?id=123&name=test HTTP/1.1\r\n" +
                             "Host: localhost:8080\r\n" +
@@ -31,6 +38,7 @@ class RequestParserTest {
     }
 
     @Test
+    @DisplayName("Parses a POST request body into parameters and content")
     void testParseValidPostRequestWithBody() throws IOException {
         String body = "key1=value1&key2=value2";
         String rawRequest = "POST /submit HTTP/1.1\r\n" +
@@ -51,6 +59,7 @@ class RequestParserTest {
     }
 
     @Test
+    @DisplayName("Empty request throws an IOException")
     void testParseEmptyRequestThrowsException() {
         String rawRequest = "";
         BufferedReader reader = new BufferedReader(new StringReader(rawRequest));
@@ -60,6 +69,7 @@ class RequestParserTest {
     }
 
     @Test
+    @DisplayName("Negative Content-Length throws an IOException")
     void testParseInvalidContentLengthThrowsException() {
         String rawRequest = "POST /upload HTTP/1.1\r\n" +
                             "Content-Length: -5\r\n" +
@@ -72,6 +82,7 @@ class RequestParserTest {
     }
 
     @Test
+    @DisplayName("POST without Content-Length ignores the body")
     void testParsePostRequestWithoutContentLengthIgnoresBody() throws IOException {
         String rawRequest = "POST /submit HTTP/1.1\r\n" +
                             "Host: localhost:8080\r\n" +

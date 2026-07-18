@@ -1,11 +1,18 @@
 package graph;
 
+import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import static org.junit.jupiter.api.Assertions.*;
 
+/**
+ * Unit tests for the pub-sub core: {@link Message} conversions, {@link Node} cycle detection,
+ * and basic {@link Topic} publish/subscribe behavior.
+ */
+@DisplayName("Graph core (Message, Node, Topic)")
 class GraphCoreTest {
 
     @Test
+    @DisplayName("Message stores payload as text, number, and NaN for non-numbers")
     void testMessageConversions() {
         Message textMsg = new Message("HelloWorld");
         assertEquals("HelloWorld", textMsg.asText);
@@ -20,6 +27,7 @@ class GraphCoreTest {
     }
 
     @Test
+    @DisplayName("A linear chain of nodes has no cycle")
     void testNodeDetectsNoCycleInAcyclicGraph() {
         Node nodeA = new Node("A");
         Node nodeB = new Node("B");
@@ -32,6 +40,7 @@ class GraphCoreTest {
     }
 
     @Test
+    @DisplayName("A two-node loop is detected as a cycle")
     void testNodeDetectsSimpleCycle() {
         Node nodeA = new Node("A");
         Node nodeB = new Node("B");
@@ -43,6 +52,7 @@ class GraphCoreTest {
     }
 
     @Test
+    @DisplayName("A cycle nested deeper in the graph is detected")
     void testNodeDetectsComplexCycle() {
         Node nodeA = new Node("A");
         Node nodeB = new Node("B");
@@ -58,6 +68,7 @@ class GraphCoreTest {
     }
 
     @Test
+    @DisplayName("A self-loop is detected as a cycle")
     void testNodeDetectsSelfLoop() {
         Node nodeA = new Node("A");
         nodeA.addEdge(nodeA);
@@ -65,6 +76,7 @@ class GraphCoreTest {
     }
 
     @Test
+    @DisplayName("Topic remembers the last published message")
     void testTopicPubSubFlow() {
         TopicManagerSingleton.TopicManager topicManager = TopicManagerSingleton.get();
         topicManager.clear();
@@ -78,6 +90,7 @@ class GraphCoreTest {
     }
 
     @Test
+    @DisplayName("A cycle is detected even with a dead-end branch present")
     void testNodeDetectsCycleWithSinkBranch() {
         Node nodeA = new Node("A");
         Node nodeB = new Node("B");

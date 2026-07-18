@@ -13,11 +13,20 @@ import graph.agents.Agent;
  */
 public class Graph extends ArrayList<Node> {
 
+    /**
+     * Checks whether the graph contains a directed cycle.
+     *
+     * @return {@code true} if any node lies on a cycle, {@code false} otherwise
+     */
     public boolean hasCycles() {
         return this.stream().anyMatch(Node::hasCycles);
     }
 
-    /** Rebuilds the graph from the current state of the TopicManager. */
+    /**
+     * Rebuilds the graph from the current state of the {@link TopicManagerSingleton}.
+     * Existing nodes are discarded, then one node is created per topic and per agent, with
+     * directed edges from publishers to their topics and from topics to their subscribers.
+     */
     public void createFromTopics() {
         clear();
 
@@ -44,6 +53,7 @@ public class Graph extends ArrayList<Node> {
         return newNode;
     }
 
+    /** Adds a topic-to-subscriber edge for every agent subscribed to {@code topic}. */
     private void connectSubscribersToTopic(Topic topic, Node topicNode, Map<Agent, Node> agentNodeMap) {
         for (Agent subscriber : topic.getSubscribers()) {
             Node agentNode = agentNodeMap.computeIfAbsent(subscriber, a -> createNewNode("A" + a.getName()));
@@ -51,6 +61,7 @@ public class Graph extends ArrayList<Node> {
         }
     }
 
+    /** Adds a publisher-to-topic edge for every agent that publishes to {@code topic}. */
     private void connectPublishersToTopic(Topic topic, Node topicNode, Map<Agent, Node> agentNodeMap) {
         for (Agent publisher : topic.getPublishers()) {
             Node agentNode = agentNodeMap.computeIfAbsent(publisher, a -> {

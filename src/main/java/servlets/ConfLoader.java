@@ -29,6 +29,15 @@ public class ConfLoader extends BaseServlet {
     // Instantiate Jackson mapper once per servlet lifecycle
     private final ObjectMapper mapper = new ObjectMapper();
 
+    /**
+     * {@inheritDoc}
+     * <p>
+     * Reads the {@code config} form field, validates it against {@link Config}, rebuilds the
+     * agent graph, and returns the new graph as JSON.
+     *
+     * @throws HTTPException {@code 400} if the config is missing, malformed, fails validation,
+     *         or introduces a cycle; {@code 500} if the temporary config file cannot be written
+     */
     @Override
     public HTTPResponse handle(HTTPRequest request) throws HTTPException {
         String configText = request.getParameters().get("config");
@@ -91,6 +100,7 @@ public class ConfLoader extends BaseServlet {
         }
     }
 
+    /** {@inheritDoc} */
     @Override
     public void close() throws IOException {}
 }

@@ -5,10 +5,19 @@ package graph.agents;
  */
 public class AvgAgent extends AggregatorAgent {
 
+    /**
+     * @param subs the input topic names
+     * @param pubs the output topic names; the average is published on {@code pubs[0]}
+     */
     public AvgAgent(String[] subs, String[] pubs) {
         super(subs, pubs);
     }
 
+    /**
+     * {@inheritDoc}
+     * <p>
+     * Returns the arithmetic mean of the inputs, or {@code 0.0} when there are none.
+     */
     @Override
     protected double aggregate(Double[] values) {
         if (values.length == 0) {

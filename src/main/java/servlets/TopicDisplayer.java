@@ -9,11 +9,20 @@ import server.enums.HTTPStatus;
 import server.exceptions.HTTPException;
 
 /**
- * GET /publish?topic=...&message=... : publishes the message on the
+ * GET /publish?topic=...&amp;message=... : publishes the message on the
  * given topic and returns a JSON snapshot of every topic's latest value.
  */
 public class TopicDisplayer extends BaseServlet {
 
+    /**
+     * {@inheritDoc}
+     * <p>
+     * Publishes the {@code message} parameter on the {@code topic} parameter and returns a
+     * JSON snapshot of every topic's latest value.
+     *
+     * @throws HTTPException {@code 400} if {@code topic} or {@code message} is missing,
+     *         {@code 404} if the topic does not exist in the current graph
+     */
     @Override
     public HTTPResponse handle(HTTPRequest request) throws HTTPException {
         String topicName   = request.getParameters().get("topic");
@@ -48,7 +57,12 @@ public class TopicDisplayer extends BaseServlet {
         return sendJsonResponse(buildTopicsJson(topicManager));
     }
 
-    /** Builds {"topics":[{"name":..., "value":...}, ...]}. */
+    /**
+     * Builds the topics snapshot JSON: {@code {"topics":[{"name":..., "value":...}, ...]}}.
+     *
+     * @param topicManager the topic manager to read topics from
+     * @return the JSON snapshot of every topic's latest value
+     */
     private String buildTopicsJson(TopicManagerSingleton.TopicManager topicManager) {
         StringBuilder json = new StringBuilder("{\"topics\":[");
         boolean first = true;
@@ -71,10 +85,12 @@ public class TopicDisplayer extends BaseServlet {
         return json.append("]}").toString();
     }
 
+    /** Escapes double quotes so {@code s} can be embedded in a JSON string literal. */
     private String escapeJson(String s) {
         return s.replace("\"", "\\\"");
     }
 
+    /** {@inheritDoc} */
     @Override
     public void close() {}
 }

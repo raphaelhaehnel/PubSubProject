@@ -15,7 +15,15 @@ import server.dtos.HTTPRequest;
  */
 public class RequestParser {
 
-    /** Parses a full HTTP request (request line + headers + optional body). */
+    /**
+     * Parses a full HTTP request (request line + headers + optional body). Query-string and
+     * form-encoded body parameters are merged into the request's parameters map.
+     *
+     * @param reader a reader positioned at the start of the raw HTTP request
+     * @return the parsed request
+     * @throws IOException if the request line is empty/invalid, or the {@code Content-Length}
+     *         header is malformed
+     */
     public static HTTPRequest parseRequest(BufferedReader reader) throws IOException {
         String requestLine = readRequestLine(reader);
         String[] requestLineParts = splitRequestLine(requestLine);

@@ -13,6 +13,12 @@ public class IncAgent implements Agent {
     private final String[] pubs;
     private final TopicManager topicManager;
 
+    /**
+     * Subscribes to {@code subs[0]} and registers as publisher of {@code pubs[0]}.
+     *
+     * @param subs the input topic names; only {@code subs[0]} is read
+     * @param pubs the output topic names; the incremented value is published on {@code pubs[0]}
+     */
     public IncAgent(String[] subs, String[] pubs) {
 
         this.subs = subs;
@@ -28,15 +34,27 @@ public class IncAgent implements Agent {
         }
     }
 
+    /** {@inheritDoc} */
     @Override
     public String getName() {
         return getClass().getSimpleName();
     }
 
+    /**
+     * {@inheritDoc}
+     * <p>
+     * No-op: this agent keeps no state between messages.
+     */
     @Override
     public void reset() {
     }
 
+    /**
+     * {@inheritDoc}
+     * <p>
+     * Publishes the received value plus {@code 1.0} on {@code pubs[0]}. Non-numeric messages
+     * are ignored.
+     */
     @Override
     public void callback(String topic, Message msg) {
         double messageValue = msg.asDouble;
@@ -50,6 +68,7 @@ public class IncAgent implements Agent {
         }
     }
 
+    /** {@inheritDoc} */
     @Override
     public void close() {
         if (subs.length > 0) {

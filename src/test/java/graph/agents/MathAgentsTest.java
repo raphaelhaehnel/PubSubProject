@@ -4,6 +4,7 @@ import graph.Message;
 import graph.Topic;
 import graph.TopicManagerSingleton;
 import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.Arguments;
@@ -13,6 +14,12 @@ import java.util.stream.Stream;
 
 import static org.junit.jupiter.api.Assertions.*;
 
+/**
+ * Unit tests for the mathematical agents: the aggregators ({@link PlusAgent}, {@link MulAgent},
+ * {@link AvgAgent}) plus {@link BinOpAgent}, {@link DivAgent}, and {@link IncAgent}, including
+ * edge cases such as division by zero, waiting for all inputs, and dropping NaN inputs.
+ */
+@DisplayName("Math agents")
 class MathAgentsTest {
 
     private TopicManagerSingleton.TopicManager topicManager;
@@ -45,6 +52,7 @@ class MathAgentsTest {
 
     @ParameterizedTest(name = "Testing {0}Agent with expected output {2}")
     @MethodSource("provideAggregatorData")
+    @DisplayName("Aggregator agents compute the expected result")
     void testAggregatorAgentsBasicMath(String agentType, double[] inputs, double expected) {
         String[] subs = new String[inputs.length];
         for (int i = 0; i < inputs.length; i++) {
@@ -71,6 +79,7 @@ class MathAgentsTest {
     }
 
     @Test
+    @DisplayName("Aggregator waits for every input before its first publish")
     void testAggregatorWaitsForAllInputsBeforePublishing() {
         PlusAgent agent = new PlusAgent(new String[]{"A", "B"}, new String[]{"C"});
         Topic topicA = topicManager.getTopic("A");
@@ -87,6 +96,7 @@ class MathAgentsTest {
     }
 
     @Test
+    @DisplayName("BinOpAgent applies a custom binary operator")
     void testBinOpAgentWithCustomLambda() {
         // Testing BinOpAgent using Math.max as the binary operator
         BinOpAgent agent = new BinOpAgent("MaxAgent", "A", "B", "Out", Math::max);
@@ -100,6 +110,7 @@ class MathAgentsTest {
     }
 
     @Test
+    @DisplayName("DivAgent divides numerator by denominator")
     void testDivAgentCalculatesCorrectly() {
         DivAgent agent = new DivAgent(new String[]{"Num", "Den"}, new String[]{"Res"});
         
@@ -112,6 +123,7 @@ class MathAgentsTest {
     }
 
     @Test
+    @DisplayName("DivAgent publishes nothing on division by zero")
     void testDivAgentIgnoresDivisionByZero() {
         DivAgent agent = new DivAgent(new String[]{"Num", "Den"}, new String[]{"Res"});
         
@@ -123,6 +135,7 @@ class MathAgentsTest {
     }
 
     @Test
+    @DisplayName("IncAgent publishes the input plus one")
     void testIncAgentIncrementsValue() {
         IncAgent agent = new IncAgent(new String[]{"Input"}, new String[]{"Output"});
         
@@ -134,6 +147,7 @@ class MathAgentsTest {
     }
     
     @Test
+    @DisplayName("Agents drop non-numeric (NaN) messages without publishing")
     void testAgentsIgnoreNaNMessagesAndGracefullyDropThem() {
         IncAgent agent = new IncAgent(new String[]{"Input"}, new String[]{"Output"});
         

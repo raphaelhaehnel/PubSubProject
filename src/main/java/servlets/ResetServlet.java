@@ -18,6 +18,12 @@ import java.util.Set;
  */
 public class ResetServlet extends BaseServlet {
 
+    /**
+     * {@inheritDoc}
+     * <p>
+     * Resets every agent (each deduplicated so it is reset once), publishes {@code "0"} on
+     * every topic, and returns the resulting topics snapshot as JSON.
+     */
     @Override
     public HTTPResponse handle(HTTPRequest request) throws HTTPException {
         TopicManagerSingleton.TopicManager topicManager = TopicManagerSingleton.get();
@@ -42,7 +48,13 @@ public class ResetServlet extends BaseServlet {
         return sendJsonResponse(buildTopicsJson(topicManager));
     }
 
-    /** Same shape as {@link TopicDisplayer#buildTopicsJson}. */
+    /**
+     * Builds the topics snapshot JSON (same shape as {@link TopicDisplayer#buildTopicsJson}):
+     * {@code {"topics":[{"name":..., "value":...}, ...]}}.
+     *
+     * @param topicManager the topic manager to read topics from
+     * @return the JSON snapshot of every topic's latest value
+     */
     private String buildTopicsJson(TopicManagerSingleton.TopicManager topicManager) {
         StringBuilder json = new StringBuilder("{\"topics\":[");
         boolean first = true;
@@ -65,10 +77,12 @@ public class ResetServlet extends BaseServlet {
         return json.append("]}").toString();
     }
 
+    /** Escapes double quotes so {@code s} can be embedded in a JSON string literal. */
     private String escapeJson(String s) {
         return s.replace("\"", "\\\"");
     }
 
+    /** {@inheritDoc} */
     @Override
     public void close() {}
 }

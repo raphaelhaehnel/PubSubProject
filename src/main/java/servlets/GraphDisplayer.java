@@ -14,6 +14,13 @@ import view.JsonGraphWriter;
  */
 public class GraphDisplayer extends BaseServlet {
 
+    /**
+     * {@inheritDoc}
+     * <p>
+     * Builds the current graph from the topic manager and returns it as JSON.
+     *
+     * @throws HTTPException {@code 500} if the current topic configuration contains a cycle
+     */
     @Override
     public HTTPResponse handle(HTTPRequest request) throws HTTPException {
         Graph graph = new Graph();
@@ -33,6 +40,7 @@ public class GraphDisplayer extends BaseServlet {
         return sendJsonResponse(JsonGraphWriter.getGraphJSON(graph));
     }
 
+    /** {@inheritDoc} */
     @Override
     public void close() {}
 }

@@ -18,6 +18,14 @@ public class DivAgent implements Agent {
     private final String[] pubs;
     private final TopicManager topicManager;
 
+    /**
+     * Subscribes to {@code subs[0]} (numerator) and {@code subs[1]} (denominator) and
+     * registers as publisher of {@code pubs[0]}. Wires nothing if fewer than two inputs
+     * are given.
+     *
+     * @param subs the input topic names; {@code subs[0]} numerator, {@code subs[1]} denominator
+     * @param pubs the output topic names; the quotient is published on {@code pubs[0]}
+     */
     public DivAgent(String[] subs, String[] pubs) {
 
         this.subs = subs;
@@ -39,17 +47,30 @@ public class DivAgent implements Agent {
         topicManager.getTopic(pubs[0]).addPublisher(this);
     }
 
+    /** {@inheritDoc} */
     @Override
     public String getName() {
         return getClass().getSimpleName();
     }
 
+    /**
+     * {@inheritDoc}
+     * <p>
+     * Clears the stored numerator and denominator.
+     */
     @Override
     public void reset() {
         this.numerator = 0.0;
         this.denominator = 0.0;
     }
 
+    /**
+     * {@inheritDoc}
+     * <p>
+     * Stores the numerator or denominator depending on which topic fired, and once both are
+     * known publishes {@code numerator / denominator}. Non-numeric messages and division by
+     * zero are skipped (nothing is published).
+     */
     @Override
     public void callback(String topic, Message msg) {
         double messageValue = msg.asDouble;
@@ -73,6 +94,7 @@ public class DivAgent implements Agent {
         }
     }
 
+    /** {@inheritDoc} */
     @Override
     public void close() {
         if (subs.length > 0) {

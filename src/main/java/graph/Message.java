@@ -21,14 +21,30 @@ public class Message {
         this.date = new Date();
     }
 
+    /**
+     * Creates a message from text. {@code asDouble} is {@link Double#NaN} if the text is
+     * not a valid number.
+     *
+     * @param text the message payload as text
+     */
     public Message(String text) {
         this(text.getBytes(), text, parseDouble(text));
     }
 
+    /**
+     * Creates a message from raw bytes, decoded as text using the platform charset.
+     *
+     * @param data the message payload as bytes
+     */
     public Message(byte[] data) {
         this(data, new String(data), parseDouble(new String(data)));
     }
 
+    /**
+     * Creates a message from a number; its text and byte forms are the number's string value.
+     *
+     * @param number the message payload as a number
+     */
     public Message(double number) {
         this(Double.toString(number).getBytes(), Double.toString(number), number);
     }

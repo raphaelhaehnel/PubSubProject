@@ -4,9 +4,15 @@ import graph.agents.IncAgent;
 import graph.agents.PlusAgent;
 import graph.agents.ParallelAgent;
 import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import static org.junit.jupiter.api.Assertions.*;
 
+/**
+ * Integration test verifying that a multi-agent pipeline of {@link ParallelAgent}-wrapped
+ * agents propagates messages end-to-end and computes the expected result.
+ */
+@DisplayName("Multi-agent pipeline integration")
 class MultiAgentIntegrationTest {
 
     @BeforeEach
@@ -15,6 +21,7 @@ class MultiAgentIntegrationTest {
     }
 
     @Test
+    @DisplayName("(A + B) then +1 pipeline yields the expected value")
     void testFullGraphPipeline() throws InterruptedException {
         // Pipeline: (A + B) -> PlusAgent -> C -> IncAgent -> D
         // Logic: (5 + 10) + 1 = 16

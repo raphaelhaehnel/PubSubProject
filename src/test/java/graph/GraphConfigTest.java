@@ -2,6 +2,7 @@ package graph;
 
 import graph.agents.PlusAgent;
 import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.io.TempDir;
 
@@ -11,6 +12,11 @@ import java.nio.file.Path;
 
 import static org.junit.jupiter.api.Assertions.*;
 
+/**
+ * Tests for graph topology building and JSON configuration loading: cycle detection via
+ * {@link Graph} and validation performed by {@link GenericConfig}.
+ */
+@DisplayName("Graph building and config loading")
 class GraphConfigTest {
 
     private TopicManagerSingleton.TopicManager topicManager;
@@ -22,6 +28,7 @@ class GraphConfigTest {
     }
 
     @Test
+    @DisplayName("Acyclic topology builds a graph with no cycles")
     void testGraphCreateFromTopicsAndDetectsNoCycles() {
         // Setup an acyclic pub-sub topology: Topic A -> PlusAgent -> Topic B
         PlusAgent agent = new PlusAgent(new String[]{"A"}, new String[]{"B"});
@@ -36,6 +43,7 @@ class GraphConfigTest {
     }
 
     @Test
+    @DisplayName("Two agents forming a loop are detected as a cycle")
     void testGraphDetectsCyclesProperly() {
         // Create a deliberate cycle: A -> Agent1 -> B -> Agent2 -> A
         PlusAgent agent1 = new PlusAgent(new String[]{"A"}, new String[]{"B"});
@@ -51,6 +59,7 @@ class GraphConfigTest {
     }
 
     @Test
+    @DisplayName("Valid JSON config is parsed and its topics are created")
     void testGenericConfigLoadsValidJson(@TempDir Path tempDir) throws IOException {
         Path configFile = tempDir.resolve("valid_config.json");
         String jsonContent = """
@@ -79,6 +88,7 @@ class GraphConfigTest {
     }
 
     @Test
+    @DisplayName("Config without an \"agents\" array is rejected")
     void testGenericConfigThrowsOnMissingAgentsArray(@TempDir Path tempDir) throws IOException {
         Path configFile = tempDir.resolve("bad_config.json");
         String jsonContent = """
@@ -99,6 +109,7 @@ class GraphConfigTest {
     }
 
     @Test
+    @DisplayName("Agent entry without a \"type\" field is rejected")
     void testGenericConfigThrowsOnMissingTypeField(@TempDir Path tempDir) throws IOException {
         Path configFile = tempDir.resolve("missing_type_config.json");
         String jsonContent = """
@@ -123,6 +134,7 @@ class GraphConfigTest {
     }
 
     @Test
+    @DisplayName("Unknown agent type yields a descriptive error")
     void testGenericConfigThrowsOnUnknownAgentType(@TempDir Path tempDir) throws IOException {
         Path configFile = tempDir.resolve("unknown_agent.json");
         String jsonContent = """
